@@ -1,0 +1,75 @@
+digraph {
+	0 [fillcolor=black fontcolor=white style=filled]
+	1 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	2 [fillcolor=black fontcolor=white style=filled]
+	3 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	4 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	5 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	6 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	7 [fillcolor=black fontcolor=white style=filled]
+	8 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	9 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	10 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	11 [fillcolor=black fontcolor=white style=filled]
+	12 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	13 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	14 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	15 [fillcolor=black fontcolor=white style=filled]
+	16 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	4 -> 16
+	9 -> 16
+	17 [fillcolor=red fontcolor=white style=filled]
+	2 -> 17
+	15 -> 17
+	18 [fillcolor=blue fontcolor=white style=filled]
+	9 -> 18
+	4 -> 18
+	19 [fillcolor=blue fontcolor=white style=filled]
+	11 -> 19
+	0 -> 19
+	20 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	6 -> 20
+	5 -> 20
+	21 [fillcolor=blue fontcolor=white style=filled]
+	17 -> 21
+	7 -> 21
+	22 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	6 -> 22
+	9 -> 22
+	23 [fillcolor=blue fontcolor=white style=filled]
+	11 -> 23
+	18 -> 23
+	24 [fillcolor=blue fontcolor=white style=filled]
+	20 -> 24
+	18 -> 24
+	25 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	0 -> 25
+	24 -> 25
+	26 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	23 -> 26
+	4 -> 26
+	27 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	9 -> 27
+	20 -> 27
+	28 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	11 -> 28
+	17 -> 28
+	29 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	19 -> 29
+	21 -> 29
+	30 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	1 -> 30
+	3 -> 30
+	8 -> 30
+	10 -> 30
+	12 -> 30
+	13 -> 30
+	14 -> 30
+	16 -> 30
+	22 -> 30
+	25 -> 30
+	26 -> 30
+	27 -> 30
+	28 -> 30
+	29 -> 30
+}

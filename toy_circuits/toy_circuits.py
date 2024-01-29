@@ -80,16 +80,19 @@ def visualize_graph(graph:list, filename:str='temp.gv'):
 
     viz = graphviz.Digraph(engine='dot')
     color_code = {'INPUT':'black', 'AND':'red', 'OR':'blue'}
-    layer_counts = [0]*len(graph)
+    # layer_counts = [0]*len(graph)
     for node in graph:
+        plot_kwargs = {
+            'fillcolor':color_code[node.gate],
+            'style':'filled',
+            'fontcolor':'white',
+            #'pos':f"{count_to_pos(layer_counts[node.layer])},{node.layer}!"
+        }
+        viz.node(str(node.id), **plot_kwargs)
+        # layer_counts[node.layer] += 1
         if node.gate != 'INPUT':
-            viz.node(str(node.id), color=color_code[node.gate])#, pos=f"{count_to_pos(layer_counts[node.layer])},{node.layer}!")
-            layer_counts[node.layer] += 1
             for child in node.children:
                 viz.edge(str(child.id), str(node.id))
-        else:
-            viz.node(str(node.id), color=color_code[node.gate])#, pos=f"{count_to_pos(layer_counts[node.layer])},{node.layer}!")
-            layer_counts[node.layer] += 1
     viz.render(f'toy_circuits/circuit_viz/{filename}')
 
 visualize_graph(make_tree(15, 16, 2, False), 'demo-tree.gv')
