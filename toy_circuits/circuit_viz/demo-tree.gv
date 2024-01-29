@@ -1,0 +1,63 @@
+digraph {
+	0 [color=black]
+	1 [color=black]
+	2 [color=black]
+	3 [color=black]
+	4 [color=black]
+	5 [color=black]
+	6 [color=black]
+	7 [color=black]
+	8 [color=black]
+	9 [color=black]
+	10 [color=black]
+	11 [color=black]
+	12 [color=black]
+	13 [color=black]
+	14 [color=black]
+	15 [color=black]
+	16 [color=red]
+	5 -> 16
+	8 -> 16
+	17 [color=red]
+	6 -> 17
+	9 -> 17
+	18 [color=blue]
+	12 -> 18
+	15 -> 18
+	19 [color=blue]
+	3 -> 19
+	17 -> 19
+	20 [color=red]
+	18 -> 20
+	0 -> 20
+	21 [color=blue]
+	19 -> 21
+	10 -> 21
+	22 [color=blue]
+	16 -> 22
+	14 -> 22
+	23 [color=red]
+	4 -> 23
+	2 -> 23
+	24 [color=blue]
+	23 -> 24
+	13 -> 24
+	25 [color=red]
+	7 -> 25
+	24 -> 25
+	26 [color=blue]
+	25 -> 26
+	20 -> 26
+	27 [color=red]
+	22 -> 27
+	26 -> 27
+	28 [color=red]
+	21 -> 28
+	11 -> 28
+	29 [color=red]
+	27 -> 29
+	28 -> 29
+	30 [color=blue]
+	1 -> 30
+	29 -> 30
+}
