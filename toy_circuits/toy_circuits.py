@@ -28,17 +28,27 @@ class Node:
         
 def make_dag(num_gates:int, num_inputs:int, fan_in:int,  input_value:bool):
     graph = []
+    childed = set() # keep track of which nodes have become children
     count = 0
     for _ in range(num_inputs):
         graph.append(Node(count, 'INPUT', input_value))
         count += 1
-    for _ in range(num_gates):
+    for _ in range(num_gates-1):
+        children=random.choices(graph, k=fan_in)
         graph.append(Node(
             count,
             gate=random.choice(['AND', 'OR']),
-            children=random.choices(graph, k=fan_in)
+            children=children
             ))
+        for child in children: childed.add(child) # track which nodes have an output
         count += 1
+    # make a single output
+    unchilded = [node for node in graph if not node in childed] # get complement
+    graph.append(Node(
+        count,
+        gate=random.choice(['AND', 'OR']),
+        children=unchilded
+    ))
     return graph
 
 def make_tree(num_gates:int, num_inputs:int, fan_in:int,  input_value:bool):
@@ -65,8 +75,8 @@ def make_tree(num_gates:int, num_inputs:int, fan_in:int,  input_value:bool):
     return graph
 
 def visualize_graph(graph:list, filename:str='temp.gv'):
-    def count_to_pos(count:int):
-        return count * (-1 if count%2==0 else 1)
+    # def count_to_pos(count:int):
+    #     return count * (-1 if count%2==0 else 1)
 
     viz = graphviz.Digraph(engine='dot')
     color_code = {'INPUT':'black', 'AND':'red', 'OR':'blue'}
