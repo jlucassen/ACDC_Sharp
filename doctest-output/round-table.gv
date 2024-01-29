@@ -1,0 +1,11 @@
+digraph {
+	0 [color=black]
+	1 [color=black]
+	2 [color=black]
+	3 [color=red]
+	2 -> 3
+	0 -> 3
+	4 [color=blue]
+	3 -> 4
+	1 -> 4
+}
