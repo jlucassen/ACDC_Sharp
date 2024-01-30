@@ -60,6 +60,7 @@ class TLGraph():
         self.build_graph()
         self.build_reverse_graph()
         self.topological_sort()
+        self.reverse_topo_order = self.topo_order[::-1]
         
         
     def build_graph(self) -> None:
@@ -118,6 +119,10 @@ class TLGraph():
         for node in self.graph: 
             for child in self.graph[node]: 
                 self.reverse_graph[child].add(node)
+        
+    def __getitem__(self, node: TLNodeIndex):
+        return self.graph[node]
+    
                 
     
     

@@ -99,6 +99,7 @@ model = HookedTransformer.from_pretrained(
 #%% 
 print("model.cfg.use_split_qkv_input", model.cfg.use_split_qkv_input)
 tlgraph = TLGraph(model)
-for key, value in tlgraph.reverse_graph.items():
-    print(key, value)
+# for key, value in tlgraph.reverse_graph.items():
+#     print(key, value)
+print(tlgraph.topo_order)
 #%% 
