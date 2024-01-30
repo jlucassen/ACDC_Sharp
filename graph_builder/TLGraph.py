@@ -36,7 +36,10 @@ def build_graph_from_model(model: HookedTransformer) -> Dict[Tuple[str, Optional
             raise Exception("really need to implement this")
         new_downstream_resid_nodes = set()
         for head_idx in range(model.cfg.n_heads - 1, -1, -1):
-            head_name = f"blocks.{layer_idx}.attn.hook_result"
+            if model.cfg.use_attn_result: 
+                head_name = f"blocks.{layer_idx}.attn.attn_result"
+            else: 
+                head_name = utils.get_act_name("z", layer_idx)
             cur_node = get_node_key(head_name, head_idx)
             for resid_node in downstream_resid_nodes: 
                 graph[cur_node].add(resid_node)
