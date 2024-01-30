@@ -2,7 +2,7 @@ import graphviz
 import toy_circuits as tc
 
 tree_size_param = 5
-dag_size_param = 10
+dag_size_param = 8
 fan_in = 2
 
 tree = tc.make_graph(2**tree_size_param-1, 2**tree_size_param, fan_in, input_value=True, tree=True)

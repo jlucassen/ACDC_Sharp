@@ -1,0 +1,127 @@
+digraph {
+	0 [fillcolor=black fontcolor=white style=filled]
+	1 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	2 [fillcolor=black fontcolor=white style=filled]
+	3 [fillcolor=black fontcolor=white style=filled]
+	4 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	5 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	6 [fillcolor=black fontcolor=white style=filled]
+	7 [fillcolor=black fontcolor=white style=filled]
+	8 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	9 [fillcolor=black fontcolor=white style=filled]
+	10 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	11 [fillcolor=black fontcolor=white style=filled]
+	12 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	13 [fillcolor=black fontcolor=white style=filled]
+	14 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	15 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	16 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	17 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	18 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	19 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	20 [fillcolor=black fontcolor=white style=filled]
+	21 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	22 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	23 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	24 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	25 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	26 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	27 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	28 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	29 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	30 [fillcolor=black fontcolor=white style=filled]
+	31 [color=yellow fillcolor=black fontcolor=white penwidth=5 style=filled]
+	32 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	24 -> 32
+	17 -> 32
+	33 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	23 -> 33
+	21 -> 33
+	34 [fillcolor=blue fontcolor=white style=filled]
+	20 -> 34
+	0 -> 34
+	35 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	16 -> 35
+	31 -> 35
+	36 [fillcolor=red fontcolor=white style=filled]
+	2 -> 36
+	6 -> 36
+	37 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	8 -> 37
+	5 -> 37
+	38 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	19 -> 38
+	25 -> 38
+	39 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	18 -> 39
+	12 -> 39
+	40 [fillcolor=blue fontcolor=white style=filled]
+	36 -> 40
+	9 -> 40
+	41 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	37 -> 41
+	28 -> 41
+	42 [fillcolor=blue fontcolor=white style=filled]
+	34 -> 42
+	13 -> 42
+	43 [fillcolor=red fontcolor=white style=filled]
+	42 -> 43
+	30 -> 43
+	44 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	3 -> 44
+	43 -> 44
+	45 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	38 -> 45
+	41 -> 45
+	46 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	14 -> 46
+	10 -> 46
+	47 [fillcolor=red fontcolor=white style=filled]
+	40 -> 47
+	11 -> 47
+	48 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	1 -> 48
+	29 -> 48
+	49 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	22 -> 49
+	44 -> 49
+	50 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	39 -> 50
+	32 -> 50
+	51 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	47 -> 51
+	7 -> 51
+	52 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	50 -> 52
+	33 -> 52
+	53 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	35 -> 53
+	27 -> 53
+	54 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	51 -> 54
+	15 -> 54
+	55 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	46 -> 55
+	45 -> 55
+	56 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	4 -> 56
+	54 -> 56
+	57 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	56 -> 57
+	48 -> 57
+	58 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	57 -> 58
+	26 -> 58
+	59 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	52 -> 59
+	49 -> 59
+	60 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	58 -> 60
+	59 -> 60
+	61 [color=yellow fillcolor=blue fontcolor=white penwidth=5 style=filled]
+	55 -> 61
+	60 -> 61
+	62 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	53 -> 62
+	61 -> 62
+}

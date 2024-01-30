@@ -2,15 +2,14 @@ import numpy as np
 import graphviz 
 
 class Node:
-    def __init__(self, id:int, gate:str, children:list|bool):
+    def __init__(self, id:int, gate:str, children:list, value:bool=None):
         assert (gate == 'AND') | (gate == 'OR') | (gate == 'INPUT')
-        assert (isinstance(children, list) and gate != 'INPUT') or (isinstance(children, bool) and gate == 'INPUT')
         self.id = id
         self.gate = gate
         self.children = children
+        self.value = value
         self.layer = 0
-        if isinstance(children, list):
-            self.layer = 1 + max([child.layer for child in self.children])
+        self.layer = 1 + max([0]+[child.layer for child in self.children])
         
     def forward(self):
         if self.gate == 'AND':
@@ -18,21 +17,18 @@ class Node:
         elif self.gate == 'OR':
             return any([child.forward() for child in self.children])
         elif self.gate == 'INPUT':
-            return self.children
+            return self.value
         
     def __repr__(self):
-        if self.gate == 'INPUT':
-            return f"{self.id=}, {self.gate=}, {self.children=}"
-        else:
-            return f"{self.id=}, {self.gate=}, {[child.id for child in self.children]=}"
+        return f"{self.id=}, {self.gate=}, {self.children=}, {self.value=}"
 
-def make_graph(num_gates:int, num_inputs:int, fan_in:int,  input_value:bool, tree=True):
+def make_graph(num_gates:int, num_inputs:int, fan_in:int,  input_value:bool, tree=True, dag_height_skew = 10):
     graph = []
     childless = []
     count = 0
     if tree: assert num_gates == num_inputs - 1 and (num_inputs & num_gates == 0) and num_inputs != 0 # bit method to check if num_inputs is power of 2
     for _ in range(num_inputs):
-        new_node = Node(count, 'INPUT', input_value)
+        new_node = Node(count, 'INPUT', [], input_value)
         graph.append(new_node)
         childless.append(new_node)
         count += 1
@@ -40,13 +36,14 @@ def make_graph(num_gates:int, num_inputs:int, fan_in:int,  input_value:bool, tre
         if tree:
             children = list(np.random.choice(childless, size=fan_in, replace=False)) # sample from childless, to prevent multi outputs
         else:
-            p = [1/(len(node.children)*1000+1) if isinstance(node.children, list) else 1e-4 for node in graph]# bias choice to get some depth
+            p = [dag_height_skew if node in childless else 1 for node in graph]# bias choice to get some depth
             p = p / np.sum(p)
             children = list(np.random.choice(graph, size=fan_in, replace=False, p=p)) # sample from graph to allow multi outputs. 
         new_node = Node(
             count,
             gate=np.random.choice(['AND', 'OR']),
-            children=children
+            children=children,
+            value=None
             )
         graph.append(new_node)
         childless.append(new_node)
@@ -58,7 +55,8 @@ def make_graph(num_gates:int, num_inputs:int, fan_in:int,  input_value:bool, tre
         graph.append(Node(
             count,
             gate=np.random.choice(['AND', 'OR']),
-            children=childless
+            children=childless,
+            value=None
             ))
     return graph
 
@@ -67,23 +65,23 @@ def get_reachable_component(graph:list, sensor_list:list=None, noise=True):
     
     for node in graph:
         if node.gate == 'INPUT':
-            node.children = noise # set up for noising/denoising
+            node.value = noise # set up for noising/denoising
 
-    assert all([node.children == noise for node in graph if node.gate == 'INPUT'])
+    assert all([node.value == noise for node in graph if node.gate == 'INPUT'])
     assert graph[-1].forward() == noise
     component_nodes = []
 
     for node in graph:
         saved_gate = node.gate
-        saved_children = node.children
+        saved_value = node.value
         node.gate = 'INPUT'
-        node.children = not noise # noise
+        node.value = not noise # noise
         for sensor in sensor_list:
             if not graph[sensor].forward() == noise: # check if any sensor flips
                 component_nodes.append(node.id)
                 break
         node.gate = saved_gate
-        node.children = saved_children
+        node.value = saved_value
     return component_nodes
 
 def alternating_components(graph:list, n_iters:int):
@@ -106,7 +104,6 @@ def visualize_graph_components(graph:list, components:list=[[]], filename:str='t
                 plot_kwargs['penwidth'] = '5'
                 plot_kwargs['color'] = 'yellow'
             viz.node(str(node.id), **plot_kwargs)
-            if node.gate != 'INPUT':
-                for child in node.children:
-                    viz.edge(str(child.id), str(node.id))
+            for child in node.children:
+                viz.edge(str(child.id), str(node.id))
         viz.render(f'toy_circuits/circuit_viz/{filename}_{i}')

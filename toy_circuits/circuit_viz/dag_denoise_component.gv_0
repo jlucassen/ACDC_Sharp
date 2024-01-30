@@ -1,0 +1,206 @@
+digraph {
+	0 [fillcolor=black fontcolor=white style=filled]
+	1 [fillcolor=black fontcolor=white style=filled]
+	2 [fillcolor=black fontcolor=white style=filled]
+	3 [fillcolor=black fontcolor=white style=filled]
+	4 [fillcolor=black fontcolor=white style=filled]
+	5 [fillcolor=black fontcolor=white style=filled]
+	6 [fillcolor=black fontcolor=white style=filled]
+	7 [fillcolor=black fontcolor=white style=filled]
+	8 [fillcolor=red fontcolor=white style=filled]
+	4 -> 8
+	1 -> 8
+	9 [fillcolor=blue fontcolor=white style=filled]
+	5 -> 9
+	0 -> 9
+	10 [fillcolor=red fontcolor=white style=filled]
+	3 -> 10
+	6 -> 10
+	11 [fillcolor=blue fontcolor=white style=filled]
+	6 -> 11
+	9 -> 11
+	12 [fillcolor=red fontcolor=white style=filled]
+	8 -> 12
+	11 -> 12
+	13 [fillcolor=red fontcolor=white style=filled]
+	9 -> 13
+	7 -> 13
+	14 [fillcolor=red fontcolor=white style=filled]
+	12 -> 14
+	3 -> 14
+	15 [fillcolor=red fontcolor=white style=filled]
+	5 -> 15
+	13 -> 15
+	16 [fillcolor=red fontcolor=white style=filled]
+	10 -> 16
+	15 -> 16
+	17 [fillcolor=red fontcolor=white style=filled]
+	14 -> 17
+	16 -> 17
+	18 [fillcolor=blue fontcolor=white style=filled]
+	2 -> 18
+	13 -> 18
+	19 [fillcolor=red fontcolor=white style=filled]
+	18 -> 19
+	17 -> 19
+	20 [fillcolor=red fontcolor=white style=filled]
+	5 -> 20
+	19 -> 20
+	21 [fillcolor=red fontcolor=white style=filled]
+	8 -> 21
+	15 -> 21
+	22 [fillcolor=blue fontcolor=white style=filled]
+	10 -> 22
+	21 -> 22
+	23 [fillcolor=blue fontcolor=white style=filled]
+	20 -> 23
+	6 -> 23
+	24 [fillcolor=red fontcolor=white style=filled]
+	22 -> 24
+	8 -> 24
+	25 [fillcolor=red fontcolor=white style=filled]
+	7 -> 25
+	24 -> 25
+	26 [fillcolor=blue fontcolor=white style=filled]
+	3 -> 26
+	18 -> 26
+	27 [fillcolor=red fontcolor=white style=filled]
+	0 -> 27
+	25 -> 27
+	28 [fillcolor=red fontcolor=white style=filled]
+	23 -> 28
+	6 -> 28
+	29 [fillcolor=blue fontcolor=white style=filled]
+	9 -> 29
+	28 -> 29
+	30 [fillcolor=red fontcolor=white style=filled]
+	0 -> 30
+	26 -> 30
+	31 [fillcolor=red fontcolor=white style=filled]
+	29 -> 31
+	27 -> 31
+	32 [fillcolor=red fontcolor=white style=filled]
+	2 -> 32
+	30 -> 32
+	33 [fillcolor=blue fontcolor=white style=filled]
+	17 -> 33
+	10 -> 33
+	34 [fillcolor=blue fontcolor=white style=filled]
+	10 -> 34
+	23 -> 34
+	35 [fillcolor=red fontcolor=white style=filled]
+	34 -> 35
+	32 -> 35
+	36 [fillcolor=blue fontcolor=white style=filled]
+	31 -> 36
+	35 -> 36
+	37 [fillcolor=blue fontcolor=white style=filled]
+	13 -> 37
+	33 -> 37
+	38 [fillcolor=blue fontcolor=white style=filled]
+	24 -> 38
+	21 -> 38
+	39 [fillcolor=blue fontcolor=white style=filled]
+	36 -> 39
+	38 -> 39
+	40 [fillcolor=red fontcolor=white style=filled]
+	37 -> 40
+	35 -> 40
+	41 [fillcolor=blue fontcolor=white style=filled]
+	3 -> 41
+	26 -> 41
+	42 [fillcolor=blue fontcolor=white style=filled]
+	2 -> 42
+	38 -> 42
+	43 [fillcolor=blue fontcolor=white style=filled]
+	2 -> 43
+	42 -> 43
+	44 [fillcolor=red fontcolor=white style=filled]
+	29 -> 44
+	42 -> 44
+	45 [fillcolor=red fontcolor=white style=filled]
+	1 -> 45
+	17 -> 45
+	46 [fillcolor=red fontcolor=white style=filled]
+	6 -> 46
+	3 -> 46
+	47 [fillcolor=red fontcolor=white style=filled]
+	14 -> 47
+	39 -> 47
+	48 [fillcolor=red fontcolor=white style=filled]
+	40 -> 48
+	4 -> 48
+	49 [fillcolor=blue fontcolor=white style=filled]
+	43 -> 49
+	41 -> 49
+	50 [fillcolor=blue fontcolor=white style=filled]
+	49 -> 50
+	42 -> 50
+	51 [fillcolor=red fontcolor=white style=filled]
+	46 -> 51
+	47 -> 51
+	52 [fillcolor=blue fontcolor=white style=filled]
+	44 -> 52
+	48 -> 52
+	53 [fillcolor=red fontcolor=white style=filled]
+	36 -> 53
+	28 -> 53
+	54 [fillcolor=red fontcolor=white style=filled]
+	45 -> 54
+	8 -> 54
+	55 [fillcolor=blue fontcolor=white style=filled]
+	51 -> 55
+	53 -> 55
+	56 [fillcolor=blue fontcolor=white style=filled]
+	39 -> 56
+	33 -> 56
+	57 [fillcolor=blue fontcolor=white style=filled]
+	50 -> 57
+	55 -> 57
+	58 [fillcolor=red fontcolor=white style=filled]
+	4 -> 58
+	51 -> 58
+	59 [fillcolor=red fontcolor=white style=filled]
+	57 -> 59
+	58 -> 59
+	60 [fillcolor=blue fontcolor=white style=filled]
+	2 -> 60
+	12 -> 60
+	61 [fillcolor=blue fontcolor=white style=filled]
+	21 -> 61
+	54 -> 61
+	62 [fillcolor=blue fontcolor=white style=filled]
+	59 -> 62
+	61 -> 62
+	63 [fillcolor=blue fontcolor=white style=filled]
+	52 -> 63
+	6 -> 63
+	64 [fillcolor=red fontcolor=white style=filled]
+	62 -> 64
+	59 -> 64
+	65 [fillcolor=blue fontcolor=white style=filled]
+	43 -> 65
+	4 -> 65
+	66 [fillcolor=red fontcolor=white style=filled]
+	65 -> 66
+	10 -> 66
+	67 [fillcolor=red fontcolor=white style=filled]
+	56 -> 67
+	25 -> 67
+	68 [fillcolor=red fontcolor=white style=filled]
+	24 -> 68
+	63 -> 68
+	69 [fillcolor=blue fontcolor=white style=filled]
+	67 -> 69
+	66 -> 69
+	70 [fillcolor=red fontcolor=white style=filled]
+	69 -> 70
+	64 -> 70
+	71 [fillcolor=blue fontcolor=white style=filled]
+	68 -> 71
+	34 -> 71
+	72 [color=yellow fillcolor=red fontcolor=white penwidth=5 style=filled]
+	60 -> 72
+	70 -> 72
+	71 -> 72
+}
