@@ -23,6 +23,12 @@ class TLNodeIndex:
     def __hash__(self):
         return hash(self.__repr__())    
     
+    def torchlike_index(self):
+        if self.index is None:
+            return slice(None)
+        else: 
+            return tuple([None] * 2 + [self.index])
+    
     
 class TLEdgeType(Enum):
     ADDITION = 0
@@ -60,6 +66,7 @@ class TLGraph():
         self.build_graph()
         self.build_reverse_graph()
         self.topological_sort()
+        self.reverse_topo_order = self.topo_order[::-1]
         
         
     def build_graph(self) -> None:
@@ -118,11 +125,17 @@ class TLGraph():
         for node in self.graph: 
             for child in self.graph[node]: 
                 self.reverse_graph[child].add(node)
+        
+    def __getitem__(self, node: TLNodeIndex):
+        return self.graph[node]
+    
                 
     
     
     
     
-if __name__ == "__main__": 
-    pass 
-        
+if __name__ == "__main__":    
+    node_index = TLNodeIndex("test", 1)
+    print(node_index.torchlike_index())
+    node_index = TLNodeIndex("test")
+    print(node_index.torchlike_index())

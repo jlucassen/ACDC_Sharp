@@ -20,13 +20,15 @@ class TLExperiment:
 
         self.model.reset_hooks()
         self.graph = TLGraph(model)
-        self.current_node = self.graph.topo_order[-1]
+        self.current_node_idx = len(self.graph.topo_order) - 1
         clean_logits, self.clean_cache = model.run_with_cache(self.clean_ds)
         corr_logits, self.corr_cache = model.run_with_cache(self.corr_ds)
 
         # put this in init, since we're not doing the path-dependent thing
         self.clean_metric_value = self.metric(clean_logits)
         self.corr_metric_value = self.metric(corr_logits)
+        
+        self.steps = 0
     
     def patch_hook(self, hook_point):
         activations_to_patch = self.corr_cache[hook_point]
@@ -39,8 +41,11 @@ class TLExperiment:
         return self.model.hook_dict[hook_point]
 
     def step(self):
+        current_node = self.graph.topo_order[self.current_node_idx]
         if self.current_node is None:
             return
+        
+        self.steps += 1
         
         for sender in self.graph.backwards_graph[self.current_node]:
             # do patch
