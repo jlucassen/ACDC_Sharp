@@ -98,9 +98,7 @@ model = HookedTransformer.from_pretrained(
                                             device=device)
 #%% 
 print("model.cfg.use_split_qkv_input", model.cfg.use_split_qkv_input)
-graph = build_graph_from_model(model)
-for key, value in graph.items(): 
+tlgraph = TLGraph(model)
+for key, value in tlgraph.reverse_graph.items():
     print(key, value)
 #%% 
-topo_order = topological_sort(graph)
-
