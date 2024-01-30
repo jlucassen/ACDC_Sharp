@@ -3,6 +3,13 @@ from transformer_lens import utils, HookedTransformer
 from collections import defaultdict
 from graphlib import TopologicalSorter
 
+class TLGraph():
+    graph: Dict[Tuple[str, Optional[int]], Set[Tuple[str, Optional[int]]]]
+
+    def __init__(self, model: HookedTransformer) -> None:
+        self.graph = defaultdict(set)
+        
+
 def topological_sort(graph: Dict[Tuple[str, Optional[int]], Set[Tuple[str, Optional[int]]]]):
     topo = TopologicalSorter(graph)
     return list(topo.static_order())
