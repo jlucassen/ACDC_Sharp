@@ -23,6 +23,12 @@ class TLNodeIndex:
     def __hash__(self):
         return hash(self.__repr__())    
     
+    def torchlike_index(self):
+        if self.index is None:
+            return slice(None)
+        else: 
+            return tuple([None] * 2 + [self.index])
+    
     
 class TLEdgeType(Enum):
     ADDITION = 0
@@ -128,6 +134,8 @@ class TLGraph():
     
     
     
-if __name__ == "__main__": 
-    pass 
-        
+if __name__ == "__main__":    
+    node_index = TLNodeIndex("test", 1)
+    print(node_index.torchlike_index())
+    node_index = TLNodeIndex("test")
+    print(node_index.torchlike_index())
