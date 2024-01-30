@@ -44,50 +44,50 @@ else:
 MAIN = __name__ == "__main__"
 
 
-# %%
-model = HookedTransformer.from_pretrained(
-    "gpt2-small",
-    center_unembed=True,
-    center_writing_weights=True,
-    fold_ln=True,
-    refactor_factored_attn_matrices=True,
-    device=device
-)
+# # %%
+# model = HookedTransformer.from_pretrained(
+#     "gpt2-small",
+#     center_unembed=True,
+#     center_writing_weights=True,
+#     fold_ln=True,
+#     refactor_factored_attn_matrices=True,
+#     device=device
+# )
+
+# #%% 
+
+# prompt_format = [
+#     "When John and Mary went to the shops,{} gave the bag to",
+#     "When Tom and James went to the park,{} gave the ball to",
+#     "When Dan and Sid went to the shops,{} gave an apple to",
+#     "After Martin and Amy went to the park,{} gave a drink to",
+# ]
+# name_pairs = [
+#     (" Mary", " John"),
+#     (" Tom", " James"),
+#     (" Dan", " Sid"),
+#     (" Martin", " Amy"),
+# ]
+
+# # Define 8 prompts, in 4 groups of 2 (with adjacent prompts having answers swapped)
+# prompts = [
+#     prompt.format(name)
+#     for (prompt, names) in zip(prompt_format, name_pairs) for name in names[::-1]
+# ]
+
+# tokens = model.to_tokens(prompts, prepend_bos=True)
+# # Move the tokens to the GPU
+# tokens = tokens.to(device)
+# # Run the model and cache all activations
+# original_logits, cache = model.run_with_cache(tokens)
 
 #%% 
-
-prompt_format = [
-    "When John and Mary went to the shops,{} gave the bag to",
-    "When Tom and James went to the park,{} gave the ball to",
-    "When Dan and Sid went to the shops,{} gave an apple to",
-    "After Martin and Amy went to the park,{} gave a drink to",
-]
-name_pairs = [
-    (" Mary", " John"),
-    (" Tom", " James"),
-    (" Dan", " Sid"),
-    (" Martin", " Amy"),
-]
-
-# Define 8 prompts, in 4 groups of 2 (with adjacent prompts having answers swapped)
-prompts = [
-    prompt.format(name)
-    for (prompt, names) in zip(prompt_format, name_pairs) for name in names[::-1]
-]
-
-tokens = model.to_tokens(prompts, prepend_bos=True)
-# Move the tokens to the GPU
-tokens = tokens.to(device)
-# Run the model and cache all activations
-original_logits, cache = model.run_with_cache(tokens)
+# act_name = utils.get_act_name("resid_post", 0)
+# cache[act_name].shape, cache.accumulated_resid().shape
 
 #%% 
-act_name = utils.get_act_name("resid_post", 0)
-cache[act_name].shape, cache.accumulated_resid().shape
-
-#%% 
-for key in list(cache.keys()): 
-    print(key)
+# for key in list(cache.keys()): 
+#     print(key)
 # %%
 model = HookedTransformer.from_pretrained( 
                                           "attn-only-2l", 

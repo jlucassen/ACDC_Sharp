@@ -4,8 +4,26 @@ from collections import defaultdict
 from graphlib import TopologicalSorter
 from enum import Enum
 
-TLNodeIndex = Tuple[str, Optional[int]]
-
+class TLNodeIndex:
+    name: str 
+    index: Optional[int]
+    def __init__(self, name: str, index: Optional[int] = None):
+        self.name = name
+        self.index = index
+    
+    def __eq__(self, other):
+        assert isinstance(other, NodeIndex)
+        return self.name == other.name and self.index == other.index
+    
+    def __repr__(self):
+        if self.index is None:
+            return self.name
+        return f"{self.name}[{self.index}]"
+    
+    def __hash__(self):
+        return hash(self.__repr__())    
+    
+    
 class TLEdgeType(Enum):
     ADDITION = 0
     DIRECT_COMPUTATION = 1
@@ -17,9 +35,6 @@ class TLEdgeType(Enum):
         assert isinstance(other, EdgeType)
         return self.value == other.value
     
-    
-def get_node_index(hook_name: str, head_idx: Optional[int] = None) -> TLNodeIndex:
-    return (hook_name, head_idx)
 
 def get_incoming_edge_type(child_node: TLNodeIndex) -> TLEdgeType:
     # parent_layer, parent_head = parent_node
@@ -52,7 +67,7 @@ class TLGraph():
         downstream_resid_nodes = set() # downstream means later in the forward pass
     
         # start with the root node (last resid node)
-        root_node = get_node_index(utils.get_act_name("resid_post", n_layers-1))
+        root_node = TLNodeIndex(utils.get_act_name("resid_post", n_layers-1))
         downstream_resid_nodes.add(root_node)
         
         for layer_idx in range(n_layers - 1, -1, -1):
@@ -66,16 +81,16 @@ class TLGraph():
                     head_name = f"blocks.{layer_idx}.attn.attn_result"
                 else: 
                     head_name = utils.get_act_name("z", layer_idx)
-                cur_node = get_node_index(head_name, head_idx)
+                cur_node = TLNodeIndex(head_name, head_idx)
                 for resid_node in downstream_resid_nodes: 
                     self.graph[cur_node].add(resid_node)
                 
                 # if model.cfg.use_split_qkv_input:
                 for decomposed_name in ["q", "k", "v"]: 
-                    decomposed_node = get_node_index(
+                    decomposed_node = TLNodeIndex(
                                                     utils.get_act_name(decomposed_name, layer_idx), 
                                                     head_idx)
-                    decomposed_input_node = get_node_index(
+                    decomposed_input_node = TLNodeIndex(
                                                     utils.get_act_name(f"{decomposed_name}_input", layer_idx), 
                                                     head_idx)
 
@@ -87,8 +102,8 @@ class TLGraph():
                     
         # maybe implement no pos embed later
         
-        tok_embed_node = get_node_index(utils.get_act_name("embed"))
-        pos_embed_node = get_node_index(utils.get_act_name("pos_embed"))
+        tok_embed_node = TLNodeIndex(utils.get_act_name("embed"))
+        pos_embed_node = TLNodeIndex(utils.get_act_name("pos_embed"))
         embed_nodes = [tok_embed_node, pos_embed_node]
         for embed_node in embed_nodes: 
             for resid_node in downstream_resid_nodes: 
