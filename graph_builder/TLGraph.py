@@ -38,7 +38,7 @@ class TLEdgeType(Enum):
 
 def get_incoming_edge_type(child_node: TLNodeIndex) -> TLEdgeType:
     # parent_layer, parent_head = parent_node
-    child_layer, child_head = child_node
+    child_layer = child_node.name
     
     if child_layer.endswith("attn_result") or child_layer.endswith("z"):
         return TLEdgeType.PLACEHOLDER
@@ -55,7 +55,6 @@ class TLGraph():
     def __init__(self, model: HookedTransformer) -> None:
         self.graph = defaultdict(set)
         self.reverse_graph = defaultdict(set)
-        self.model = model
         self.cfg = model.cfg
         self.build_graph()
         self.build_reverse_graph()
@@ -122,6 +121,14 @@ class TLGraph():
         
     def __getitem__(self, node: TLNodeIndex):
         return self.graph[node]
+    
+    def add_edge(self, sender: TLNodeIndex, receiver: TLNodeIndex):
+        self.graph[sender].add(receiver)
+        self.reverse_graph[receiver].add(sender)
+    
+    def remove_edge(self, sender: TLNodeIndex, receiver: TLNodeIndex):
+        self.graph[sender].remove(receiver)
+        self.reverse_graph[receiver].remove(sender)
     
                 
     
