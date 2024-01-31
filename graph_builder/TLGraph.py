@@ -130,7 +130,11 @@ class TLGraph():
         self.graph[sender].remove(receiver)
         self.reverse_graph[receiver].remove(sender)
     
-                
+    def count_edges(self): 
+        return sum([len(self.reverse_graph[node]) \
+                    if get_incoming_edge_type(node) != TLEdgeType.PLACEHOLDER \
+                    else 0 \
+                    for node in self.reverse_graph])
     
     
     
