@@ -20,6 +20,10 @@ def EAP_corrupted_forward_hook(
     upstream_activations_difference: Float[Tensor, "batch_size seq_len n_upstream_nodes d_model"], 
     graph: EAPGraph
 ):
+    '''
+    Records forward activations from corrupted tokens in upstream_activations_difference.
+    Records as negative so forward clean can add to calculate difference in place.
+    '''
     hook_slice = graph.get_hook_slice(hook.name)
     if activations.ndim == 3:
         # We are in the case of a residual layer or MLP
@@ -38,6 +42,10 @@ def EAP_clean_forward_hook(
     upstream_activations_difference: Float[Tensor, "batch_size seq_len n_upstream_nodes d_model"], 
     graph: EAPGraph
 ):
+    '''
+    Records forward activations from clean tokens in upstream_activations_difference.
+    Adds in place to calculate difference, assuming EAP_corrupted_forward_hook has already run.
+    '''
     hook_slice = graph.get_hook_slice(hook.name)
     if activations.ndim == 3:
         upstream_activations_difference[:, :, hook_slice, :] += activations.unsqueeze(-2)
@@ -50,6 +58,12 @@ def EAP_clean_backward_hook(
     upstream_activations_difference: Float[Tensor, "batch_size seq_len n_upstream_nodes d_model"],
     graph: EAPGraph
 ):
+    '''
+    Uses get_hook_slice to retrieve the node(s) at current hook point
+    Retrieves grads from current nodes
+    Uses get_slice_previous_upstream_nodes to retrieve nodes upstream of current hook point
+    Retrieves activation diffs from upstream nodes
+    '''
     hook_slice = graph.get_hook_slice(hook.name)
 
     # we get the slice of all upstream nodes that come before this downstream node
@@ -76,6 +90,9 @@ def EAP_downstream_patching_hook(
     upstream_activations_difference: Float[Tensor, "batch_size seq_len n_upstream_nodes d_model"],
     graph: EAPGraph,
 ) -> Union[Float[Tensor, "batch_size seq_len n_heads d_model"], Float[Tensor, "batch_size seq_len d_model"]]:
+    '''
+    Literally never used, AFAICT?
+    '''
     hook_slice = graph.downstream_hook_slice[hook.name]
 
     earlier_upstream_nodes_slice = graph.get_slice_previous_upstream_nodes(hook)
@@ -130,7 +147,7 @@ def EAP(
     upstream_hook_filter = lambda name: name.endswith(tuple(graph.upstream_hooks))
     downstream_hook_filter = lambda name: name.endswith(tuple(graph.downstream_hooks))
 
-    corruped_upstream_hook_fn = partial(
+    corrupted_upstream_hook_fn = partial(
         EAP_corrupted_forward_hook,
         upstream_activations_difference=upstream_activations_difference,
         graph=graph
@@ -150,7 +167,7 @@ def EAP(
 
     for idx in tqdm(range(0, num_prompts, batch_size)):
         # we first perform a forward pass on the corrupted input 
-        model.add_hook(upstream_hook_filter, corruped_upstream_hook_fn, "fwd")
+        model.add_hook(upstream_hook_filter, corrupted_upstream_hook_fn, "fwd")
 
         # we don't need gradients for this forward pass
         # we'll take the gradients when we perform the forward pass on the clean input

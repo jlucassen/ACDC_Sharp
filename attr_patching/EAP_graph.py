@@ -12,8 +12,25 @@ from typing import Dict
 DEFAULT_GRAPH_PLOT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ims")
 
 class EAPGraph:
-
+    '''
+    Stores:
+    - cfg, a HookedTransformer config
+    - valid_(up/down)stream_(node/hook)_types, lists of name pieces to filter nodes/hooks on
+    - (up/down)stream_component_ordering, a dict storing the order to sort node types into within a layer
+    - (up/down)stream_nodes, a list of node names, in order by layer and component ordering
+    - (up/down)stream_node_index, a dict of indices into flattened node lists, keyed by node name
+    - (up/down)stream_hook_slice, a dict of slices into flattened node lists that retrieve the node or nodes corresponding to a given hook point, keyed by hook point name
+    - upstream_nodes_before_(_/attn/mlp)_layer, a dict of slices into flattened node lists that retrieve all nodes upstream of a specified hook point, keyed by hook point name
+    - eap_scores, the approximate metric diff scores
+    - adj_matrix, an adjacency matrix of nodes, listed in the flattened order
+    '''
     def __init__(self, cfg, upstream_nodes=None, downstream_nodes=None, edges=None):
+        '''
+        - Fills in cfg from arguments
+        - Fills in (up/down)stream_component_ordering
+        - Has confusingly named argument (up/down)stream_nodes, which are lists of valid node name pieces, not lists of node names.
+        - Calls setup_graph_from_nodes
+        '''
         self.cfg = cfg
 
         self.valid_upstream_node_types = ["resid_pre", "mlp", "head"]
@@ -63,6 +80,13 @@ class EAPGraph:
         self.adj_matrix: Float[Tensor, "n_upstream_nodes n_downstream_nodes"] = None
 
     def setup_graph_from_nodes(self, upstream_nodes=None, downstream_nodes=None):
+        '''
+        - Calls get_hooks_from_nodes to fill out node lists
+        Fills in the six slice dictionaries:
+        - (up/down)stream_node_index, a dict of indices into flattened node lists, keyed by node name
+        - (up/down)stream_hook_slice, a dict of slices into flattened node lists that retrieve the node or nodes corresponding to a given hook point, keyed by hook point name
+        - upstream_nodes_before_(_/attn/mlp)_layer, a dict of slices into flattened node lists that retrieve all nodes upstream of a specified hook point, keyed by hook point name
+        '''
         # if no nodes are specified, we assume that all of them will be used
         if upstream_nodes is None:
             upstream_nodes = self.valid_upstream_node_types.copy()
@@ -158,7 +182,11 @@ class EAPGraph:
     # Given a set of upstream nodes and downstream nodes, this function returns the corresponding hooks
     # to access the activations of these nodes. We return the list of hooks sorted by layer number.
     def get_hooks_from_nodes(self, upstream_nodes, downstream_nodes):
-
+        '''
+        Fills in the two flattened node lists:
+        - (up/down)stream_nodes, a list of node names, in order by layer and component ordering
+        Fills them by generating all node names from the valid name pieces given, and sorting.
+        '''
         # we first check that the types of the nodes passed are valid
         for node in upstream_nodes:
             node_type = node.split(".")[0] # 'resid_pre', 'mlp' or 'head'
@@ -244,6 +272,9 @@ class EAPGraph:
         return upstream_hooks, downstream_hooks
     
     def get_slice_previous_upstream_nodes(self, downstream_hook):
+        '''
+        Uses upstream_nodes_before_(_/mlp)_layer to get slices to nodes upstream of current hook point
+        '''
         layer = downstream_hook.layer()
         hook_type = downstream_hook.name.split(".")[-1]
         # if hook_type == "hook_resid_post":
@@ -254,6 +285,9 @@ class EAPGraph:
             return self.upstream_nodes_before_layer[layer]
 
     def get_hook_slice(self, hook_name):
+        '''
+        Uses (up/down)stream_hook_slice to get slice to nodes corresponding to current hook point
+        '''
         if hook_name in self.upstream_hook_slice:
             return self.upstream_hook_slice[hook_name]
         elif hook_name in self.downstream_hook_slice:
