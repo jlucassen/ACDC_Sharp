@@ -38,8 +38,9 @@ class TLEdgeType(Enum):
     def __eq__(self, other):
         """Necessary because of extremely frustrating error that arises with load_ext autoreload (because this uses importlib under the hood: https://stackoverflow.com/questions/66458864/enum-comparison-become-false-after-reloading-module)"""
 
-        assert isinstance(other, TLEdgeType)
-        return self.value == other.value
+        if type(self).__qualname__ != type(other).__qualname__:
+            return NotImplemented
+        return self.name == other.name and self.value == other.value
     
 
 def get_incoming_edge_type(child_node: TLNodeIndex) -> TLEdgeType:
@@ -114,6 +115,10 @@ class TLGraph():
         for embed_node in embed_nodes: 
             for resid_node in downstream_resid_nodes: 
                 self.graph[embed_node].add(resid_node)
+        # resid_pre = TLNodeIndex(utils.get_act_name("resid_pre", 0))
+        # for resid_node in downstream_resid_nodes: 
+        #     self.graph[resid_pre].add(resid_node)
+            
                 
     def topological_sort(self):
         topo = TopologicalSorter(self.graph)
@@ -142,8 +147,14 @@ class TLGraph():
                     else 0 \
                     for node in self.reverse_graph])
     
+    def node_disconnected(self, node: TLNodeIndex):
+        return len(self.graph[node]) == 0
     
-    
+    def remove_node(self, node: TLNodeIndex):
+        all_parents = self.reverse_graph[node].copy() 
+        for parent in all_parents:
+            self.remove_edge(parent, node)
+            
     
 if __name__ == "__main__":    
     node_index = TLNodeIndex("test", 1)

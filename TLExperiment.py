@@ -95,7 +95,7 @@ class TLExperiment:
     
     
     def add_all_sender_hooks(self):
-        for node in self.graph.reverse_topo_order:
+        for node in self.graph.topo_order:
             if get_incoming_edge_type(node) != TLEdgeType.PLACEHOLDER and node.name not in self.sender_hook_dict:
                 self.add_sender_hook(node)
         
@@ -141,13 +141,13 @@ class TLExperiment:
             print("no more nodes to process")
             return 
         cur_node = self.graph.topo_order[self.current_node_idx]
-        self.steps += 1
-        print(f"haha {self.graph.reverse_graph[cur_node]=}")
-        if not self.graph.reverse_graph[cur_node]:
-            print("***** herehere *****")
+        print(f"{self.graph.reverse_graph[cur_node]=}")
+        if self.current_node_idx > 0 and self.graph.node_disconnected(cur_node):
+            self.graph.remove_node(cur_node)
             self.current_node_idx += 1
+            self.cur_eval = self.run_model_and_eval()
             return
-       
+        self.steps += 1
 
         
         self.cur_eval = self.run_model_and_eval()
@@ -171,7 +171,7 @@ class TLExperiment:
             pass
         else: 
             self.try_remove_edges(cur_node)
-            
+        
         self.current_node_idx += 1
         
             

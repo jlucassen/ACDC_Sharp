@@ -137,11 +137,12 @@ exp = TLExperiment(
     device=device,
     debug=True
 )
-for _ in tqdm(range(2)):
+for _ in tqdm(range(50)):
     exp.step()
 # exp.step()
 
 #%% 
+exp.graph.reverse_graph
 #%% 
 exp.graph.reverse_graph
 # %%
@@ -150,5 +151,27 @@ for i in orig_exp.graph.reverse_graph.keys():
 print(len(orig_exp.graph.reverse_graph.keys()))
 # %%
 exp.graph.graph
+
+# %%
+
+model = HookedTransformer.from_pretrained(
+    "redwood_attn_2l",  # load Redwood's model
+    center_writing_weights=False,  # these are needed as this model is a Shortformer; this is a technical detail
+    center_unembed=False,
+    fold_ln=False,
+    device=device,
+)
+
+# standard ACDC options
+model.set_use_attn_result(True)
+model.set_use_split_qkv_input(True) 
+
+text = "The quick brown fox jumps over the lazy dog The quick brown fox jumps over the lazy dog"
+logits, cache = model.run_with_cache(text, remove_batch_dim=True)
+str_tokens = model.to_str_tokens(text)
+for layer in range(model.cfg.n_layers):
+    attention_pattern = cache["pattern", layer]
+    display(cv.attention.attention_patterns(tokens=str_tokens, attention=attention_pattern))
+
 
 # %%
