@@ -27,7 +27,7 @@ class TLNodeIndex:
         if self.index is None:
             return slice(None)
         else: 
-            return tuple([None] * 2 + [self.index])
+            return tuple([slice(None)] * 2 + [self.index])
     
     
 class TLEdgeType(Enum):
@@ -38,13 +38,13 @@ class TLEdgeType(Enum):
     def __eq__(self, other):
         """Necessary because of extremely frustrating error that arises with load_ext autoreload (because this uses importlib under the hood: https://stackoverflow.com/questions/66458864/enum-comparison-become-false-after-reloading-module)"""
 
-        assert isinstance(other, EdgeType)
+        assert isinstance(other, TLEdgeType)
         return self.value == other.value
     
 
 def get_incoming_edge_type(child_node: TLNodeIndex) -> TLEdgeType:
     # parent_layer, parent_head = parent_node
-    child_layer, child_head = child_node
+    child_layer = child_node.name
     
     if child_layer.endswith("attn_result") or child_layer.endswith("z"):
         return TLEdgeType.PLACEHOLDER
@@ -61,7 +61,6 @@ class TLGraph():
     def __init__(self, model: HookedTransformer) -> None:
         self.graph = defaultdict(set)
         self.reverse_graph = defaultdict(set)
-        self.model = model
         self.cfg = model.cfg
         self.build_graph()
         self.build_reverse_graph()
@@ -85,7 +84,7 @@ class TLGraph():
             new_downstream_resid_nodes = set()
             for head_idx in range(self.cfg.n_heads - 1, -1, -1):
                 if self.cfg.use_attn_result: 
-                    head_name = f"blocks.{layer_idx}.attn.attn_result"
+                    head_name = f"blocks.{layer_idx}.attn.hook_result"
                 else: 
                     head_name = utils.get_act_name("z", layer_idx)
                 cur_node = TLNodeIndex(head_name, head_idx)
@@ -129,7 +128,19 @@ class TLGraph():
     def __getitem__(self, node: TLNodeIndex):
         return self.graph[node]
     
-                
+    def add_edge(self, sender: TLNodeIndex, receiver: TLNodeIndex):
+        self.graph[sender].add(receiver)
+        self.reverse_graph[receiver].add(sender)
+    
+    def remove_edge(self, sender: TLNodeIndex, receiver: TLNodeIndex):
+        self.graph[sender].remove(receiver)
+        self.reverse_graph[receiver].remove(sender)
+    
+    def count_edges(self): 
+        return sum([len(self.reverse_graph[node]) \
+                    if get_incoming_edge_type(node) != TLEdgeType.PLACEHOLDER \
+                    else 0 \
+                    for node in self.reverse_graph])
     
     
     
