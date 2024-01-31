@@ -1,9 +1,9 @@
-from transformer_lens.HookedTransformer import HookedTransformer
-
-from graph_builder import TLGraph, get_incoming_edge_type
-from collections import OrderedDict
-
+from transformer_lens.HookedTransformer import HookedTransformer, HookPoint
+from graph_builder.TLGraph import TLGraph, get_incoming_edge_type, TLNodeIndex, TLEdgeType
+from collections import OrderedDict, defaultdict
+from functools import partial 
 from torch import Tensor
+import torch as t
 class TLExperiment:
 
     def __init__(
@@ -18,7 +18,7 @@ class TLExperiment:
         self.model = model
         self.clean_ds = clean_ds
         self.corr_ds = corr_ds
-        self.metric = metric
+        self.metric = lambda x: metric(x).item()
         self.threshold = threshold
 
         self.model.reset_hooks()
@@ -56,13 +56,13 @@ class TLExperiment:
                             node: TLNodeIndex):
         cur_incoming_edge_type = get_incoming_edge_type(node)
         
-        if cur_incoming_edge_type == EdgeType.DIRECT_COMPUTATION: 
+        if cur_incoming_edge_type == TLEdgeType.DIRECT_COMPUTATION: 
             idx = node.torchlike_index()
             if not self.reverse_graph[node]:
                 parent_idx = parent_node.torchlike_index()
                 activations[:][idx] = self.corrupted_cache[node.name][idx].to(activations.device)
             return activations
-        elif cur_incoming_edge_type == EdgeType.ADDITION:
+        elif cur_incoming_edge_type == TLEdgeType.ADDITION:
             cur_idx = node.torchlike_index()
             activations[:][cur_idx] = self.corrupted_cache[node.name][cur_idx].to(activations.device)
             
@@ -99,13 +99,14 @@ class TLExperiment:
     
     def run_model_and_eval(self):
         logits = self.model(self.clean_ds)
+        print(logits.shape)
         return self.metric(logits)
 
     def try_remove_edges(self, cur_node):
         cur_incoming_edge_type = get_incoming_edge_type(cur_node)
         
         for parent_node in self.graph.reverse_graph[cur_node]:
-            if cur_incoming_edge_type == EdgeType.ADDITION:
+            if cur_incoming_edge_type == TLEdgeType.ADDITION:
                 self.add_sender_hook(parent_node)
                 
             self.graph.remove_edge(parent_node, cur_node)
@@ -119,14 +120,14 @@ class TLExperiment:
                 self.graph.add_edge(parent_node, cur_node)
             
     def step(self):
-        if current_node_idx < 0:
+        if self.current_node_idx < 0:
             return 
         cur_node = self.graph.reverse_topo_order[self.current_node_idx]
         self.steps += 1
         
         self.cur_eval = self.run_model_and_eval()
         
-        cur_incoming_edge_type = get_incoming_edge_type(current_node)
+        cur_incoming_edge_type = get_incoming_edge_type(cur_node)
         if cur_incoming_edge_type != TLEdgeType.PLACEHOLDER:
             self.add_receiver_hook(cur_node)
             

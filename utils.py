@@ -20,6 +20,8 @@ def kl_divergence(
         base_model_logprobs = base_model_logprobs[:, -1, :]
 
     logprobs = F.log_softmax(logits, dim=-1)
+    
+    print(logprobs.shape, base_model_logprobs.shape)
     kl_div = F.kl_div(logprobs, base_model_logprobs, log_target=True, reduction="none").sum(dim=-1)
 
     if mask_repeat_candidates is not None:

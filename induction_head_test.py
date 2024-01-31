@@ -31,7 +31,9 @@ from transformer_lens import utils, HookedTransformer, ActivationCache
 from transformer_lens.components import Embed, Unembed, LayerNorm, MLP
 from graph_builder.TLGraph import *
 import torch.nn.functional as F
-from utils import kl_divergence
+from utils import kl_divergence, shuffle_tensor
+from TLExperiment import TLExperiment
+
 
 import huggingface_hub
 #%% 
@@ -88,7 +90,7 @@ def get_mask_repeat_candidates(num_examples=None, seq_len=None, device=None):
 num_examples = 10
 seq_len = 300
 threshold = 0.71
-
+data_seed=42
 
 model = get_model(device=device)
 
@@ -106,11 +108,14 @@ validation_patch_data = shuffle_tensor(validation_data, seed=data_seed).contiguo
 with t.no_grad():
     base_val_logprobs = F.log_softmax(model(validation_data), dim=-1).detach()
         
-        
+#%% 
+print(validation_data.shape)
+print(base_val_logprobs.shape)
 metric = partial(
     kl_divergence,
     base_model_logprobs=base_val_logprobs,
     mask_repeat_candidates=validation_mask,
+    last_seq_element_only=False,
 )
 
 #%% 
@@ -121,4 +126,8 @@ exp = TLExperiment(
     metric=metric,
     threshold=threshold
 )
+#%% 
+for _ in tqdm(range(100)):
+    exp.step()
+# exp.step()
 #%% 
