@@ -27,7 +27,7 @@ class TLNodeIndex:
         if self.index is None:
             return slice(None)
         else: 
-            return tuple([None] * 2 + [self.index])
+            return tuple([slice(None)] * 2 + [self.index])
     
     
 class TLEdgeType(Enum):
@@ -84,7 +84,7 @@ class TLGraph():
             new_downstream_resid_nodes = set()
             for head_idx in range(self.cfg.n_heads - 1, -1, -1):
                 if self.cfg.use_attn_result: 
-                    head_name = f"blocks.{layer_idx}.attn.attn_result"
+                    head_name = f"blocks.{layer_idx}.attn.hook_result"
                 else: 
                     head_name = utils.get_act_name("z", layer_idx)
                 cur_node = TLNodeIndex(head_name, head_idx)

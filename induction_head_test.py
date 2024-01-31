@@ -117,17 +117,38 @@ metric = partial(
     mask_repeat_candidates=validation_mask,
     last_seq_element_only=False,
 )
-
+#%% 
+orig_exp =  TLExperiment(
+    model=model,
+    clean_ds=validation_data,
+    corr_ds=validation_patch_data,
+    metric=metric,
+    threshold=threshold,
+    device=device,
+    debug=True
+)
 #%% 
 exp = TLExperiment(
     model=model,
     clean_ds=validation_data,
     corr_ds=validation_patch_data,
     metric=metric,
-    threshold=threshold
+    threshold=threshold,
+    device=device,
+    debug=True
 )
-#%% 
-for _ in tqdm(range(100)):
+for _ in tqdm(range(2)):
     exp.step()
 # exp.step()
+
 #%% 
+#%% 
+exp.graph.reverse_graph
+# %%
+for i in orig_exp.graph.reverse_graph.keys(): 
+    print(i)
+print(len(orig_exp.graph.reverse_graph.keys()))
+# %%
+exp.graph.graph
+
+# %%
