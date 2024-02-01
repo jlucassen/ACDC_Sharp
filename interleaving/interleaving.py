@@ -122,9 +122,12 @@ corrupt_grad = t.autograd.grad(outputs=corrupt_logit_diff, inputs=end_node_corru
 #%% 
 print(clean_grad.shape)
 
-
-end_node.grad = t.max(corrupt_logit_diff * clean_grad, clean_logit_diff * corrupt_grad)
-print()
+# need to initialize the grad from the end node to the metric, so we can start path finding
+end_node_clean_corrupt = clean_cache[end_node.name] - corrupt_cache[end_node.name]
+end_node_corrupt_clean = corrupt_cache[end_node.name] - clean_cache[end_node.name]
+print(end_node_corrupt_clean.shape, clean_grad.shape)
+end_node.grad = t.max(einops.einsum(end_node_corrupt_clean, clean_grad, 'a b c, a b c ->'), einops.einsum(end_node_clean_corrupt, corrupt_grad, 'a b c, a b c ->'))
+print(end_node.grad)
 #%% 
 for receiver in graph.topo_order:
     children = graph.reverse_graph[receiver]
