@@ -1,5 +1,5 @@
 from transformer_lens.HookedTransformer import HookedTransformer, HookPoint
-from graph_builder.TLGraph import TLGraph, get_incoming_edge_type, TLNodeIndex, TLEdgeType
+from TLGraph import TLGraph, get_incoming_edge_type, TLNodeIndex, TLEdgeType
 from collections import OrderedDict, defaultdict
 from functools import partial 
 from torch import Tensor
@@ -85,18 +85,20 @@ class TLExperiment:
     def add_sender_hook(self, node: TLNodeIndex, override=False):
         
         if not override and node.name in self.sender_hook_dict:
-            raise Exception(f"sender hook already exists {node}")
+            # raise Exception(f"sender hook already exists {node}")
+            return False
         
         self.model.add_hook(
             name=node.name, 
             hook=partial(self.sender_hook),
         )
         self.sender_hook_dict[node.name].add(node.  index)
+        return True
     
     
     def add_all_sender_hooks(self):
-        for node in self.graph.reverse_topo_order:
-            if get_incoming_edge_type(node) != TLEdgeType.PLACEHOLDER and node.name not in self.sender_hook_dict:
+        for node in self.graph.topo_order:
+            if node.name not in self.sender_hook_dict:
                 self.add_sender_hook(node)
         
         
@@ -119,10 +121,10 @@ class TLExperiment:
     def try_remove_edges(self, cur_node):
         cur_incoming_edge_type = get_incoming_edge_type(cur_node)
         
-        all_parent_nodes = self.graph.reverse_graph[cur_node].copy()
+        all_parent_nodes = sorted(self.graph.reverse_graph[cur_node].copy())
         for parent_node in all_parent_nodes:
             if cur_incoming_edge_type == TLEdgeType.ADDITION:
-                self.add_sender_hook(parent_node,override=True)
+                self.add_sender_hook(parent_node)
                 
             self.graph.remove_edge(parent_node, cur_node)
             old_eval = self.cur_eval
@@ -141,13 +143,13 @@ class TLExperiment:
             print("no more nodes to process")
             return 
         cur_node = self.graph.topo_order[self.current_node_idx]
-        self.steps += 1
-        print(f"haha {self.graph.reverse_graph[cur_node]=}")
-        if not self.graph.reverse_graph[cur_node]:
-            print("***** herehere *****")
+        print(f"{self.graph.reverse_graph[cur_node]=}")
+        while self.current_node_idx > 0 and self.graph.node_disconnected(cur_node):
+            self.graph.remove_node(cur_node)
             self.current_node_idx += 1
-            return
-       
+            cur_node = self.graph.topo_order[self.current_node_idx]
+            self.cur_eval = self.run_model_and_eval()
+        self.steps += 1
 
         
         self.cur_eval = self.run_model_and_eval()
@@ -171,7 +173,7 @@ class TLExperiment:
             pass
         else: 
             self.try_remove_edges(cur_node)
-            
+        
         self.current_node_idx += 1
         
             

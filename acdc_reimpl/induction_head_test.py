@@ -29,7 +29,7 @@ from pathlib import Path
 from transformer_lens.hook_points import HookPoint
 from transformer_lens import utils, HookedTransformer, ActivationCache
 from transformer_lens.components import Embed, Unembed, LayerNorm, MLP
-from graph_builder.TLGraph import *
+from TLGraph import *
 import torch.nn.functional as F
 from utils import kl_divergence, shuffle_tensor
 from TLExperiment import TLExperiment
@@ -89,12 +89,10 @@ def get_mask_repeat_candidates(num_examples=None, seq_len=None, device=None):
 #%% 
 num_examples = 10
 seq_len = 300
-threshold = 0.71
+threshold = 0.8
 data_seed=42
 
 model = get_model(device=device)
-
-#%% 
 validation_data_orig = get_validation_data(device=device)
 mask_orig = get_mask_repeat_candidates(num_examples=None, device=device) # None so we get all
 assert validation_data_orig.shape == mask_orig.shape
@@ -118,16 +116,6 @@ metric = partial(
     last_seq_element_only=False,
 )
 #%% 
-orig_exp =  TLExperiment(
-    model=model,
-    clean_ds=validation_data,
-    corr_ds=validation_patch_data,
-    metric=metric,
-    threshold=threshold,
-    device=device,
-    debug=True
-)
-#%% 
 exp = TLExperiment(
     model=model,
     clean_ds=validation_data,
@@ -137,13 +125,17 @@ exp = TLExperiment(
     device=device,
     debug=True
 )
-for _ in tqdm(range(2)):
+exp.graph.count_edges()
+for _ in tqdm(range(50)):
     exp.step()
+exp.graph.count_edges()
 # exp.step()
 
 #%% 
-#%% 
 exp.graph.reverse_graph
+#%% 
+exp.graph.generate_reduced_reverse_graph()
+
 # %%
 for i in orig_exp.graph.reverse_graph.keys(): 
     print(i)
@@ -151,4 +143,77 @@ print(len(orig_exp.graph.reverse_graph.keys()))
 # %%
 exp.graph.graph
 
+# %%
+
+ 
+model = HookedTransformer.from_pretrained(
+    "redwood_attn_2l",  # load Redwood's model
+    center_writing_weights=False,  # these are needed as this model is a Shortformer; this is a technical detail
+    center_unembed=False,
+    fold_ln=False,
+    device=device,
+)
+# standard ACDC options
+model.set_use_attn_result(True)
+model.set_use_split_qkv_input(True)
+ 
+def generate_repeated_tokens(
+    model: HookedTransformer, seq_len: int, batch: int = 1
+) -> Int[Tensor, "batch full_seq_len"]:
+    '''
+    Generates a sequence of repeated random tokens
+
+    Outputs are:
+        rep_tokens: [batch, 1+2*seq_len]
+    '''
+    prefix = (t.ones(batch, 1) * model.tokenizer.bos_token_id).long()
+    # SOLUTION
+    rep_tokens_half = t.randint(0, model.cfg.d_vocab, (batch, seq_len), dtype=t.int64)
+    rep_tokens = t.cat([prefix, rep_tokens_half, rep_tokens_half], dim=-1).to(device)
+    return rep_tokens
+
+def run_and_cache_model_repeated_tokens(model: HookedTransformer, seq_len: int, batch: int = 1) -> Tuple[t.Tensor, t.Tensor, ActivationCache]:
+    '''
+    Generates a sequence of repeated random tokens, and runs the model on it, returning logits, tokens and cache
+
+    Should use the `generate_repeated_tokens` function above
+
+    Outputs are:
+        rep_tokens: [batch, 1+2*seq_len]
+        rep_logits: [batch, 1+2*seq_len, d_vocab]
+        rep_cache: The cache of the model run on rep_tokens
+    '''
+    # SOLUTION
+    rep_tokens = generate_repeated_tokens(model, seq_len, batch)
+    rep_logits, rep_cache = model.run_with_cache(rep_tokens)
+    return rep_tokens, rep_logits, rep_cache
+
+seq_len = 50
+batch = 1
+(rep_tokens, rep_logits, rep_cache) = run_and_cache_model_repeated_tokens(model, seq_len, batch)
+rep_cache.remove_batch_dim()
+rep_str = model.to_str_tokens(rep_tokens)
+model.reset_hooks() 
+
+def induction_attn_detector(cache: ActivationCache) -> List[str]:
+    '''
+    Returns a list e.g. ["0.2", "1.4", "1.9"] of "layer.head" which you judge to be induction heads
+
+    Remember - the tokens used to generate rep_cache are (bos_token, *rand_tokens, *rand_tokens)
+    '''
+    # SOLUTION
+    attn_heads = []
+    for layer in range(model.cfg.n_layers):
+        for head in range(model.cfg.n_heads):
+            attention_pattern = cache["pattern", layer][head]
+            # take avg of (-seq_len+1)-offset elements
+            seq_len = (attention_pattern.shape[-1] - 1) // 2
+            score = attention_pattern.diagonal(-seq_len+1).mean()
+            print(f"{layer}.{head} score = {score}")
+            if score > 0.4:
+                attn_heads.append(f"{layer}.{head}")
+    return attn_heads
+
+
+print("Induction heads = ", ", ".join(induction_attn_detector(rep_cache)))
 # %%

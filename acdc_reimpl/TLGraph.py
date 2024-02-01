@@ -23,6 +23,13 @@ class TLNodeIndex:
     def __hash__(self):
         return hash(self.__repr__())    
     
+    def __gt__(self, other):
+        assert isinstance(other, TLNodeIndex)
+        if self.name == other.name: 
+            return self.index > other.index
+        else:
+            return self.name < other.name
+    
     def torchlike_index(self):
         if self.index is None:
             return slice(None)
@@ -38,15 +45,16 @@ class TLEdgeType(Enum):
     def __eq__(self, other):
         """Necessary because of extremely frustrating error that arises with load_ext autoreload (because this uses importlib under the hood: https://stackoverflow.com/questions/66458864/enum-comparison-become-false-after-reloading-module)"""
 
-        assert isinstance(other, TLEdgeType)
-        return self.value == other.value
+        if type(self).__qualname__ != type(other).__qualname__:
+            return NotImplemented
+        return self.name == other.name and self.value == other.value
     
 
 def get_incoming_edge_type(child_node: TLNodeIndex) -> TLEdgeType:
     # parent_layer, parent_head = parent_node
     child_layer = child_node.name
     
-    if child_layer.endswith("attn_result") or child_layer.endswith("z"):
+    if child_layer.endswith("result") or child_layer.endswith("z"):
         return TLEdgeType.PLACEHOLDER
     elif child_layer.endswith("resid_post") or child_layer.endswith("_input"):
         return TLEdgeType.ADDITION
@@ -108,12 +116,16 @@ class TLGraph():
                     
         # maybe implement no pos embed later
         
-        tok_embed_node = TLNodeIndex(utils.get_act_name("embed"))
-        pos_embed_node = TLNodeIndex(utils.get_act_name("pos_embed"))
-        embed_nodes = [tok_embed_node, pos_embed_node]
-        for embed_node in embed_nodes: 
-            for resid_node in downstream_resid_nodes: 
-                self.graph[embed_node].add(resid_node)
+        # tok_embed_node = TLNodeIndex(utils.get_act_name("embed"))
+        # pos_embed_node = TLNodeIndex(utils.get_act_name("pos_embed"))
+        # embed_nodes = [tok_embed_node, pos_embed_node]
+        # for embed_node in embed_nodes: 
+        #     for resid_node in downstream_resid_nodes: 
+        #         self.graph[embed_node].add(resid_node)
+        resid_pre = TLNodeIndex(utils.get_act_name("resid_pre", 0))
+        for resid_node in downstream_resid_nodes: 
+            self.graph[resid_pre].add(resid_node)
+            
                 
     def topological_sort(self):
         topo = TopologicalSorter(self.graph)
@@ -142,8 +154,22 @@ class TLGraph():
                     else 0 \
                     for node in self.reverse_graph])
     
+    def node_disconnected(self, node: TLNodeIndex):
+        return len(self.graph[node]) == 0
     
-    
+    def remove_node(self, node: TLNodeIndex):
+        all_parents = self.reverse_graph[node].copy() 
+        for parent in all_parents:
+            self.remove_edge(parent, node)
+            
+    def generate_reduced_reverse_graph(self):
+        reduced_graph = {}
+        for node in self.reverse_graph: 
+            if self.reverse_graph[node]:
+                reduced_graph[node] = self.reverse_graph[node]
+            
+        return reduced_graph
+            
     
 if __name__ == "__main__":    
     node_index = TLNodeIndex("test", 1)
