@@ -40,3 +40,9 @@ def shuffle_tensor(tens, seed=42):
     """Shuffle tensor along first dimension"""
     torch.random.manual_seed(seed)
     return tens[torch.randperm(tens.shape[0])]
+
+
+def make_graph(
+    graph: TLGraph, 
+): 
+    raise Exception("Can't implement due to weird pygraphviz error")
