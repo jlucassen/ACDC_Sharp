@@ -4,8 +4,10 @@ from transformer_lens import HookedTransformer
 from ioi_dataset import IOIDataset
 from functools import partial
 from tqdm import tqdm
+from collections import defaultdict
+import einops
 
-from EAP_utils import get_hooks_from_nodes
+from acdc_reimpl.TLGraph import TLGraph, TLNodeIndex
 
 device = t.device('cuda') if t.cuda.is_available() else t.device('cpu')
 # %%
@@ -62,7 +64,48 @@ clean_logits, clean_activations_with_grads = get_activations_with_grads(model, c
 corrupt_logits, corrupt_activations_with_grads = get_activations_with_grads(model, corrupt_dataset)
 # %%
 
-def hook_filter(hook_point_name, valid_types = ['mlp', 'head']):
- return any([valid in hook_point_name for valid in valid_types])
+# calculate activation diff
+
+# %%
+
+threshold = 0
+
+metric_value.backward()
+
+graph = TLGraph(model)
+graph.reverse_graph[TLNodeIndex('blocks.11.hook_resid_post')]
+
+included_grads_to_metric = defaultdict([]) # lists of grads to metric along included path, keyed by receiver name
+included_grads_to_metric[graph.topo_order[0]] = list(t.autograd.grad(outputs=metric_value, inputs=clean_logits),
+                                                    t.autograd.grad(outputs=metric_value, inputs=corrupt_logits))
+
+for receiver in graph.topo_order:
+ if receiver in included_grads_to_metric.keys(): # check if the recieving node has any included grads to metric
+  grads_to_metric = included_grads_to_metric[receiver]
+ else: # if not, ignore this receiver
+  continue
+ for sender in graph.reverse_graph[receiver]:
+  clean_sender_activation = clean_activations_with_grads[sender.name][sender.torchlike_index()]
+  corrupt_sender_activation = corrupt_activations_with_grads[sender.name][sender.torchlike_index()]
+  sender_activation_diff = clean_sender_activation - corrupt_sender_activation
+
+  clean_receiver_activation = clean_activations_with_grads[receiver.name][sender.torchlike_index()]
+  corrupt_receiver_activation = corrupt_activations_with_grads[receiver.name][sender.torchlike_index()]
+  clean_grad = t.autograd.grad(outputs=clean_receiver_activation, inputs=clean_sender_activation, retain_graph=True)
+  corrupt_grad = t.autograd.grad(outputs=corrupt_receiver_activation, inputs=corrupt_sender_activation, retain_graph=True)
+  
+  clean_reciever_activation_diff = einops.einsum(sender_activation_diff, clean_grad, 'a b, b c -> a c')
+  corrupt_reciever_activation_diff = einops.einsum(sender_activation_diff, corrupt_grad, 'a b, b c -> a c')
+
+  for grad_to_metric in grads_to_metric:
+    clean_metric_diff = t.dot(clean_reciever_activation_diff, grad_to_metric) # sender diff is clean-corrupt, so this gives metric improvement
+    corrupt_metric_diff = t.dot(corrupt_reciever_activation_diff, grad_to_metric)
+
+    if clean_metric_diff > threshold:
+     included_grads_to_metric[sender].append(clean_grad @ grad_to_metric)
+    elif corrupt_metric_diff > threshold:
+     included_grads_to_metric[sender].append(corrupt_grad @ grad_to_metric)
+     
+
 
 # %%

@@ -12,7 +12,7 @@ class TLNodeIndex:
         self.index = index
     
     def __eq__(self, other):
-        assert isinstance(other, NodeIndex)
+        assert isinstance(other, TLNodeIndex)
         return self.name == other.name and self.index == other.index
     
     def __repr__(self):
