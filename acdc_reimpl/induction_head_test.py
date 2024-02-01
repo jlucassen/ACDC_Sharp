@@ -29,7 +29,7 @@ from pathlib import Path
 from transformer_lens.hook_points import HookPoint
 from transformer_lens import utils, HookedTransformer, ActivationCache
 from transformer_lens.components import Embed, Unembed, LayerNorm, MLP
-from graph_builder.TLGraph import *
+from TLGraph import *
 import torch.nn.functional as F
 from utils import kl_divergence, shuffle_tensor
 from TLExperiment import TLExperiment

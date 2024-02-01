@@ -1,5 +1,5 @@
 from transformer_lens.HookedTransformer import HookedTransformer, HookPoint
-from graph_builder.TLGraph import TLGraph, get_incoming_edge_type, TLNodeIndex, TLEdgeType
+from TLGraph import TLGraph, get_incoming_edge_type, TLNodeIndex, TLEdgeType
 from collections import OrderedDict, defaultdict
 from functools import partial 
 from torch import Tensor
