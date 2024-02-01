@@ -54,7 +54,7 @@ def get_incoming_edge_type(child_node: TLNodeIndex) -> TLEdgeType:
     # parent_layer, parent_head = parent_node
     child_layer = child_node.name
     
-    if child_layer.endswith("result") or child_layer.endswith("z"):
+    if child_layer.endswith("result") or child_layer.endswith("z") or child_layer.endswith("mlp_out"):
         return TLEdgeType.PLACEHOLDER
     elif child_layer.endswith("resid_post") or child_layer.endswith("_input"):
         return TLEdgeType.ADDITION
@@ -89,7 +89,15 @@ class TLGraph():
 
             # not supporting mlps right now 
             if not self.cfg.attn_only: 
-                raise Exception("really need to implement this")
+                mlp_out_node = TLNodeIndex(f"blocks.{layer_idx}.hook_mlp_out")
+                mlp_in_node = TLNodeIndex(f"blocks.{layer_idx}.hook_mlp_in")
+                for resid_node in downstream_resid_nodes: 
+                    self.graph[mlp_out_node].add(resid_node)
+                self.graph[mlp_in_node].add(mlp_out_node)
+                downstream_resid_nodes.add(mlp_in_node)
+                
+                
+                
             new_downstream_resid_nodes = set()
             for head_idx in range(self.cfg.n_heads - 1, -1, -1):
                 if self.cfg.use_attn_result: 
