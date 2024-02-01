@@ -107,14 +107,14 @@ with t.no_grad():
     base_val_logprobs = F.log_softmax(model(validation_data), dim=-1).detach()
         
 #%% 
-print(validation_data.shape)
-print(base_val_logprobs.shape)
 metric = partial(
     kl_divergence,
     base_model_logprobs=base_val_logprobs,
     mask_repeat_candidates=validation_mask,
     last_seq_element_only=False,
+    return_one_element=True
 )
+# save base_val_logprobs in a file 
 #%% 
 exp = TLExperiment(
     model=model,
@@ -126,10 +126,11 @@ exp = TLExperiment(
     debug=True
 )
 exp.graph.count_edges()
-for _ in tqdm(range(50)):
+
+#%% 
+for _ in tqdm(range(1)):
     exp.step()
 exp.graph.count_edges()
-# exp.step()
 
 #%% 
 exp.graph.reverse_graph
@@ -143,77 +144,4 @@ print(len(orig_exp.graph.reverse_graph.keys()))
 # %%
 exp.graph.graph
 
-# %%
-
- 
-model = HookedTransformer.from_pretrained(
-    "redwood_attn_2l",  # load Redwood's model
-    center_writing_weights=False,  # these are needed as this model is a Shortformer; this is a technical detail
-    center_unembed=False,
-    fold_ln=False,
-    device=device,
-)
-# standard ACDC options
-model.set_use_attn_result(True)
-model.set_use_split_qkv_input(True)
- 
-def generate_repeated_tokens(
-    model: HookedTransformer, seq_len: int, batch: int = 1
-) -> Int[Tensor, "batch full_seq_len"]:
-    '''
-    Generates a sequence of repeated random tokens
-
-    Outputs are:
-        rep_tokens: [batch, 1+2*seq_len]
-    '''
-    prefix = (t.ones(batch, 1) * model.tokenizer.bos_token_id).long()
-    # SOLUTION
-    rep_tokens_half = t.randint(0, model.cfg.d_vocab, (batch, seq_len), dtype=t.int64)
-    rep_tokens = t.cat([prefix, rep_tokens_half, rep_tokens_half], dim=-1).to(device)
-    return rep_tokens
-
-def run_and_cache_model_repeated_tokens(model: HookedTransformer, seq_len: int, batch: int = 1) -> Tuple[t.Tensor, t.Tensor, ActivationCache]:
-    '''
-    Generates a sequence of repeated random tokens, and runs the model on it, returning logits, tokens and cache
-
-    Should use the `generate_repeated_tokens` function above
-
-    Outputs are:
-        rep_tokens: [batch, 1+2*seq_len]
-        rep_logits: [batch, 1+2*seq_len, d_vocab]
-        rep_cache: The cache of the model run on rep_tokens
-    '''
-    # SOLUTION
-    rep_tokens = generate_repeated_tokens(model, seq_len, batch)
-    rep_logits, rep_cache = model.run_with_cache(rep_tokens)
-    return rep_tokens, rep_logits, rep_cache
-
-seq_len = 50
-batch = 1
-(rep_tokens, rep_logits, rep_cache) = run_and_cache_model_repeated_tokens(model, seq_len, batch)
-rep_cache.remove_batch_dim()
-rep_str = model.to_str_tokens(rep_tokens)
-model.reset_hooks() 
-
-def induction_attn_detector(cache: ActivationCache) -> List[str]:
-    '''
-    Returns a list e.g. ["0.2", "1.4", "1.9"] of "layer.head" which you judge to be induction heads
-
-    Remember - the tokens used to generate rep_cache are (bos_token, *rand_tokens, *rand_tokens)
-    '''
-    # SOLUTION
-    attn_heads = []
-    for layer in range(model.cfg.n_layers):
-        for head in range(model.cfg.n_heads):
-            attention_pattern = cache["pattern", layer][head]
-            # take avg of (-seq_len+1)-offset elements
-            seq_len = (attention_pattern.shape[-1] - 1) // 2
-            score = attention_pattern.diagonal(-seq_len+1).mean()
-            print(f"{layer}.{head} score = {score}")
-            if score > 0.4:
-                attn_heads.append(f"{layer}.{head}")
-    return attn_heads
-
-
-print("Induction heads = ", ", ".join(induction_attn_detector(rep_cache)))
 # %%

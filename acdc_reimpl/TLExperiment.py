@@ -54,9 +54,6 @@ class TLExperiment:
         activations_dup = activations
         if self.device is not None:
             activations_dup = activations_dup.to(self.device)
-        # if node.index is not None:
-        #     activations_dup = activations_dup[node.torchlike_index()]
-        # idx = node.torchlike_index()
         self.online_cache[hook.name] = activations_dup
         return activations
     

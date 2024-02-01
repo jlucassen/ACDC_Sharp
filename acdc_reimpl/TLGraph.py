@@ -66,10 +66,11 @@ class TLGraph():
     
     graph: Dict[TLNodeIndex, Set[TLNodeIndex]]
 
-    def __init__(self, model: HookedTransformer) -> None:
+    def __init__(self, model: HookedTransformer, use_pos_embed=False) -> None:
         self.graph = defaultdict(set)
         self.reverse_graph = defaultdict(set)
         self.cfg = model.cfg
+        self.use_pos_embed = use_pos_embed
         self.build_graph()
         self.build_reverse_graph()
         self.topological_sort()
@@ -113,18 +114,17 @@ class TLGraph():
                     new_downstream_resid_nodes.add(decomposed_input_node)
             downstream_resid_nodes.update(new_downstream_resid_nodes)
                         
-                    
-        # maybe implement no pos embed later
-        
-        # tok_embed_node = TLNodeIndex(utils.get_act_name("embed"))
-        # pos_embed_node = TLNodeIndex(utils.get_act_name("pos_embed"))
-        # embed_nodes = [tok_embed_node, pos_embed_node]
-        # for embed_node in embed_nodes: 
-        #     for resid_node in downstream_resid_nodes: 
-        #         self.graph[embed_node].add(resid_node)
-        resid_pre = TLNodeIndex(utils.get_act_name("resid_pre", 0))
-        for resid_node in downstream_resid_nodes: 
-            self.graph[resid_pre].add(resid_node)
+        if self.use_pos_embed:
+            tok_embed_node = TLNodeIndex(utils.get_act_name("embed"))
+            pos_embed_node = TLNodeIndex(utils.get_act_name("pos_embed"))
+            embed_nodes = [tok_embed_node, pos_embed_node]
+            for embed_node in embed_nodes: 
+                for resid_node in downstream_resid_nodes: 
+                    self.graph[embed_node].add(resid_node)
+        else: 
+            resid_pre = TLNodeIndex(utils.get_act_name("resid_pre", 0))
+            for resid_node in downstream_resid_nodes: 
+                self.graph[resid_pre].add(resid_node)
             
                 
     def topological_sort(self):
