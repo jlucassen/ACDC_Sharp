@@ -137,9 +137,6 @@ class TLExperiment:
         for parent_node in all_parent_nodes:
             if parent_node not in self.frontier:
                 self.frontier.add(parent_node)
-            # if cur_incoming_edge_type == TLEdgeType.ADDITION:
-            #     self.add_sender_hook(parent_node)
-                
             
             edge = self.graph.edges[parent_node][cur_node]
             print(f"try {'denoise' if self.mode == TLExperimentMode.DENOISING else 'noising'} edge {cur_node} -> {parent_node}")
