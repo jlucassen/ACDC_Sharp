@@ -5,6 +5,7 @@ from functools import partial
 from torch import Tensor
 import torch as t
 from enum import Enum
+import einops
 class TLExperimentMode(Enum):
     NOISING = 0
     DENOISING = 1
@@ -154,12 +155,22 @@ class TLExperiment:
                     diffs[node.name] = cache1[node.name] - cache2[node.name]
         return diffs
     
-    def mean_dots(self, first, second):
+    def mean_dots(self, new, original):
+        '''
+        We want to see how much of original is explained by new.
+        We can get the norm of the projection of new onto original with a dot,
+        and then the ratio of the norms by just dividing.
+        But new and original are batches of matrices, so we just average over all the vector pairs.
+        '''
         dots = []
-        for key in first:
-            assert key in second, key
-            dots.append(t.mul(first[key], second[key]).norm())
-        return t.mean(t.Tensor(dots, dtype=float))
+        for key in new:
+            assert key in original
+            projection_norms = einops.einsum(new[key], original[key], '... cols, ... cols -> ...') # dot cols to get scalars
+            original_norms = t.norm(original[key], dim=-1)
+            print(original_norms)
+            norm_ratios = projection_norms / original_norms # element wise divide
+            dots.append(t.mean(norm_ratios))
+        return t.mean(t.tensor(dots))
 
     
     def try_remove_edges(self, cur_node):
@@ -181,13 +192,18 @@ class TLExperiment:
             if self.mode == TLExperimentMode.NOISING:
                 baseline_ds = self.clean_ds
                 baseline_cache = self.clean_cache
+                self.model(baseline_ds)
+                # the direction of the diff we compare to has to match
+                # for noising, we're trying to explain performance loss, so 
+                patched_act_diffs = self.calculate_activation_diffs(baseline_cache, self.online_cache)
             else: 
                 baseline_ds = self.corr_ds
                 baseline_cache = self.corrupted_cache
-            self.model(baseline_ds)
+                self.model(baseline_ds)
+                # for denoising, we're trying to explain performance gain, so patched-corrupted
+                patched_act_diffs = self.calculate_activation_diffs(self.online_cache, baseline_cache)
             
-            patched_act_diffs = self.calculate_activation_diffs(self.online_cache, baseline_cache)
-            self.mean_dot = self.mean_dots(patched_act_diffs, self.ori_cache_diff)
+            self.mean_dot = self.mean_dots(patched_act_diffs , self.ori_cache_diff)
             print(f"mean dot: {self.mean_dot:.2f}")
             
             
