@@ -7,10 +7,13 @@ from enum import Enum
 class TLNodeIndex:
     name: str 
     index: Optional[int]
+    noise_visited: bool
+    denoise_visited: bool
     def __init__(self, name: str, index: Optional[int] = None):
         self.name = name
         self.index = index
-    
+        self.visited = [False, False]
+        
     def __eq__(self, other):
         assert isinstance(other, TLNodeIndex)
         return self.name == other.name and self.index == other.index
@@ -49,6 +52,17 @@ class TLEdgeType(Enum):
             return NotImplemented
         return self.name == other.name and self.value == other.value
     
+    
+class TLEdge:
+    type: TLEdgeType
+    present: bool 
+    
+    def __init__(self, type: TLEdgeType):
+        self.type = type
+        self.present = True
+        self.final = False
+        
+    
 
 def get_incoming_edge_type(child_node: TLNodeIndex) -> TLEdgeType:
     # parent_layer, parent_head = parent_node
@@ -73,6 +87,7 @@ class TLGraph():
         self.use_pos_embed = use_pos_embed
         self.build_graph()
         self.build_reverse_graph()
+        self.build_edges()
         self.topological_sort()
         self.reverse_topo_order = self.topo_order[::-1]
         
@@ -86,7 +101,7 @@ class TLGraph():
         downstream_resid_nodes.add(root_node)
         
         for layer_idx in range(n_layers - 1, -1, -1):
-
+            
             if not self.cfg.attn_only: 
                 mlp_out_node = TLNodeIndex(f"blocks.{layer_idx}.hook_mlp_out")
                 mlp_in_node = TLNodeIndex(f"blocks.{layer_idx}.hook_mlp_in")
@@ -143,6 +158,15 @@ class TLGraph():
         for node in self.graph: 
             for child in self.graph[node]: 
                 self.reverse_graph[child].add(node)
+                
+                
+    def build_edges(self):
+        self.edges = defaultdict(lambda: defaultdict(TLEdge))
+        for parent in self.graph:
+            for child in self.graph[parent]:
+                edge_type = get_incoming_edge_type(child)
+                self.edges[parent][child] = TLEdge(edge_type)
+        
         
     def __getitem__(self, node: TLNodeIndex):
         return self.graph[node]
@@ -156,10 +180,14 @@ class TLGraph():
         self.reverse_graph[receiver].remove(sender)
     
     def count_edges(self): 
-        return sum([len(self.reverse_graph[node]) \
-                    if get_incoming_edge_type(node) != TLEdgeType.PLACEHOLDER \
-                    else 0 \
-                    for node in self.reverse_graph])
+        count = 0 
+        for node in self.reverse_graph:
+            if get_incoming_edge_type(node) == TLEdgeType.PLACEHOLDER:
+                continue
+            for parent in self.reverse_graph[node]:
+                if self.edges[parent][node].present:
+                    count += 1
+        return count
     
     def node_disconnected(self, node: TLNodeIndex):
         return len(self.graph[node]) == 0
@@ -170,11 +198,11 @@ class TLGraph():
             self.remove_edge(parent, node)
             
     def generate_reduced_reverse_graph(self):
-        reduced_graph = {}
+        reduced_graph = defaultdict(set)
         for node in self.reverse_graph: 
-            if self.reverse_graph[node]:
-                reduced_graph[node] = self.reverse_graph[node]
-            
+            for parent in self.reverse_graph[node]:
+                if self.edges[parent][node].present:
+                    reduced_graph[node].add(parent)
         return reduced_graph
             
     

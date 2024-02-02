@@ -29,10 +29,10 @@ from pathlib import Path
 from transformer_lens.hook_points import HookPoint
 from transformer_lens import utils, HookedTransformer, ActivationCache
 from transformer_lens.components import Embed, Unembed, LayerNorm, MLP
-from TLGraph import *
+from TLComponentGraph import *
 import torch.nn.functional as F
 from utils import kl_divergence, shuffle_tensor
-from TLExperiment import TLExperiment
+from TLComponentExperiment import TLExperiment
 
 
 import huggingface_hub
@@ -89,7 +89,7 @@ def get_mask_repeat_candidates(num_examples=None, seq_len=None, device=None):
 #%% 
 num_examples = 10
 seq_len = 300
-threshold = 0.71
+threshold = 0.8
 data_seed=42
 
 model = get_model(device=device)
@@ -128,7 +128,9 @@ exp = TLExperiment(
 exp.graph.count_edges()
 
 #%% 
-for _ in tqdm(range(50)):
+exp.frontier
+#%% 
+for _ in tqdm(range(1)):
     exp.step()
 exp.graph.count_edges()
 
