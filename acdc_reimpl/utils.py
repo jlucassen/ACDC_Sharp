@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from typing import Any, Optional, Tuple, Union, List
-
+from TLGraph import TLGraph
 def kl_divergence(
     logits: torch.Tensor,
     base_model_logprobs: torch.Tensor,

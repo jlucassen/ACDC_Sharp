@@ -29,10 +29,10 @@ from pathlib import Path
 from transformer_lens.hook_points import HookPoint
 from transformer_lens import utils, HookedTransformer, ActivationCache
 from transformer_lens.components import Embed, Unembed, LayerNorm, MLP
-from TLGraph import *
+from TLComponentGraph import *
 import torch.nn.functional as F
 from utils import kl_divergence, shuffle_tensor
-from TLExperiment import TLExperiment
+from TLComponentExperiment import TLExperiment
 
 
 import huggingface_hub
@@ -128,7 +128,7 @@ exp = TLExperiment(
 exp.graph.count_edges()
 
 #%% 
-for _ in tqdm(range(1)):
+for _ in tqdm(range(5)):
     exp.step()
 exp.graph.count_edges()
 

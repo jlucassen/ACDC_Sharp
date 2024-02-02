@@ -7,12 +7,13 @@ from enum import Enum
 class TLNodeIndex:
     name: str 
     index: Optional[int]
+    noise_visited: bool
+    denoise_visited: bool
     def __init__(self, name: str, index: Optional[int] = None):
         self.name = name
         self.index = index
-        self.grad = None
-        self.score = None
-    
+        self.visited = (False, False)
+        
     def __eq__(self, other):
         assert isinstance(other, TLNodeIndex)
         return self.name == other.name and self.index == other.index
@@ -20,7 +21,7 @@ class TLNodeIndex:
     def __repr__(self):
         if self.index is None:
             return self.name
-        return f"{self.name}[{self.index}] score:{self.score}"
+        return f"{self.name}[{self.index}]"
     
     def __hash__(self):
         return hash(self.__repr__())    
@@ -54,15 +55,13 @@ class TLEdgeType(Enum):
     
 class TLEdge:
     type: TLEdgeType
-    noise_visited: bool
-    denoise_visited: bool
     present: bool 
     
     def __init__(self, type: TLEdgeType):
         self.type = type
-        self.noise_visited = False
-        self.denoise_visited = False
         self.present = True
+        self.final = False
+        
     
 
 def get_incoming_edge_type(child_node: TLNodeIndex) -> TLEdgeType:
@@ -181,10 +180,14 @@ class TLGraph():
         self.reverse_graph[receiver].remove(sender)
     
     def count_edges(self): 
-        return sum([len(self.reverse_graph[node]) \
-                    if get_incoming_edge_type(node) != TLEdgeType.PLACEHOLDER \
-                    else 0 \
-                    for node in self.reverse_graph])
+        count = 0 
+        for node in self.reverse_graph:
+            if get_incoming_edge_type(node) == TLEdgeType.PLACEHOLDER:
+                continue
+            for parent in self.reverse_graph[node]:
+                if self.edges[parent][node].present:
+                    count += 1
+        return count
     
     def node_disconnected(self, node: TLNodeIndex):
         return len(self.graph[node]) == 0

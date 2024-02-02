@@ -1,6 +1,6 @@
 from transformer_lens.HookedTransformer import HookedTransformer, HookPoint
-from TLGraph import TLGraph, get_incoming_edge_type, TLNodeIndex, TLEdgeType
-from collections import OrderedDict, defaultdict
+from TLComponentGraph import TLGraph, get_incoming_edge_type, TLNodeIndex, TLEdgeType
+from collections import OrderedDict, defaultdict, OrderedSet
 from functools import partial 
 from torch import Tensor
 import torch as t
@@ -43,8 +43,8 @@ class TLExperiment:
         self.receiver_hook_dict = defaultdict(set)
         self.device = device
         self.debug = debug
-        self.mode = TLExperimentMode.NOISING
-        self.frontier = set()
+        self.mode = TLExperimentMode.DENOISING
+        self.frontier = OrderedSet([self.graph.topo_order[0]])
         self.add_all_sender_hooks()
         
         if self.debug: 
@@ -71,18 +71,25 @@ class TLExperiment:
                             hook: HookPoint,
                             node: TLNodeIndex):
         cur_incoming_edge_type = get_incoming_edge_type(node)
-        
         if cur_incoming_edge_type == TLEdgeType.DIRECT_COMPUTATION: 
             idx = node.torchlike_index()
-            if self.graph.reverse_graph[node]:
+            parent_node = next(iter(self.graph.reverse_graph[node]))
+            edge = self.graph.edges[parent_node][node]
+            if not edge.present: 
+                print(f"DIRECT_COMPUTATION corrupting edge {node}")
                 activations[:][idx] = self.corrupted_cache[node.name][idx].to(self.device)
             return activations
         elif cur_incoming_edge_type == TLEdgeType.ADDITION:
             cur_idx = node.torchlike_index()
             activations[:][cur_idx] = self.corrupted_cache[node.name][cur_idx].to(self.device)
-            
             for parent_node in self.graph.reverse_graph[node]:
                 parent_idx = parent_node.torchlike_index()
+                edge = self.graph.edges[parent_node][node]
+                if self.mode == TLExperimentMode.NOISING and not edge.present:
+                    continue
+                elif self.mode == TLExperimentMode.DENOISING and edge.present:
+                    continue
+                
                 activations[cur_idx] += self.online_cache[parent_node.name][parent_idx].to(self.device)
                 activations[cur_idx] -= self.corrupted_cache[parent_node.name][parent_idx].to(self.device)
             return activations
@@ -108,8 +115,6 @@ class TLExperiment:
             if node.name not in self.sender_hook_dict:
                 self.add_sender_hook(node)
         
-        
-        
     def add_receiver_hook(self, node: TLNodeIndex):
         if node.name in self.receiver_hook_dict and \
             (node.index is None or node.index in self.receiver_hook_dict[node.name]):
@@ -130,61 +135,70 @@ class TLExperiment:
         
         all_parent_nodes = sorted(self.graph.reverse_graph[cur_node].copy())
         for parent_node in all_parent_nodes:
-            if cur_incoming_edge_type == TLEdgeType.ADDITION:
-                self.add_sender_hook(parent_node)
+            if parent_node not in self.frontier:
+                self.frontier.add(parent_node)
+            # if cur_incoming_edge_type == TLEdgeType.ADDITION:
+            #     self.add_sender_hook(parent_node)
                 
-            # self.graph.remove_edge(parent_node, cur_node)
+            
             edge = self.graph.edges[parent_node][cur_node]
+            print(f"try {'denoise' if self.mode == TLExperimentMode.DENOISING else 'noising'} edge {cur_node} -> {parent_node}")
             edge.present = False
             old_eval = self.cur_eval
             new_eval = self.run_model_and_eval()
-            print("try remove edge {} -> {}".format(cur_node, parent_node))
+            
             print(f"new eval: {new_eval:.2f}, old eval: {old_eval:.2f}, diff: {(new_eval - old_eval):.2f}")
-            if new_eval - old_eval < self.threshold:
+            if self.pass_eval_metric(old_eval, new_eval):
                 self.cur_eval = new_eval
             else: 
-                # self.graph.add_edge(parent_node, cur_node)
                 edge.present = True
                 if self.debug:
                     print(f"===== NODE NOT TRIMMED ====")
             
     def step(self):
-        if self.current_node_idx >= len(self.graph.topo_order):
-            print("no more nodes to process")
-            return 
-        cur_node = self.graph.topo_order[self.current_node_idx]
-        print(f"{self.graph.reverse_graph[cur_node]=}")
-        while self.current_node_idx > 0 and self.graph.node_disconnected(cur_node):
-            self.graph.remove_node(cur_node)
-            self.current_node_idx += 1
-            cur_node = self.graph.topo_order[self.current_node_idx]
-            self.cur_eval = self.run_model_and_eval()
-        self.steps += 1
-
-        
+        # if self.current_node_idx >= len(self.graph.topo_order):
+        #     print("no more nodes to process")
+        #     return 
+        # cur_node = self.graph.topo_order[self.current_node_idx]
+        # while self.current_node_idx > 0 and self.graph.node_disconnected(cur_node):
+        #     self.graph.remove_node(cur_node)
+        #     self.current_node_idx += 1
+        #     cur_node = self.graph.topo_order[self.current_node_idx]
+        #     self.cur_eval = self.run_model_and_eval()
+        # self.steps += 1
+        self.mode = TLExperimentMode.DENOISING if self.mode == TLExperimentMode.NOISING else TLExperimentMode.NOISING
         self.cur_eval = self.run_model_and_eval()
-        if self.debug:
-            print(f"\n\n!!!! STEP {self.steps}: {cur_node} {self.current_node_idx}!!!! ")
-            print(f"current eval: {self.cur_eval}")
-            if self.steps == 1: 
-                print(f"online cache keys: {self.online_cache.keys()}")
         
-        cur_incoming_edge_type = get_incoming_edge_type(cur_node)
-        if cur_incoming_edge_type != TLEdgeType.PLACEHOLDER:
-            if self.debug:
-                print(f"adding receiver hook {cur_node}")
-            self.add_receiver_hook(cur_node)
+        for cur_node in self.frontier: 
+            if cur_node.visited[self.mode]:
+                raise Exception(f"node {cur_node} already visited in mode {self.mode}")
+            cur_node.visited[self.mode] = True
             
-        if cur_incoming_edge_type == TLEdgeType.DIRECT_COMPUTATION:
-            self.add_sender_hook(cur_node, override=True)
+            if self.debug:
+                print(f"\n\n!!!! STEP {self.steps}: {cur_node} {self.current_node_idx}!!!! ")
+                print(f"current eval: {self.cur_eval}")
+                if self.steps == 1: 
+                    print(f"online cache keys: {self.online_cache.keys()}")
+            
+            cur_incoming_edge_type = get_incoming_edge_type(cur_node)
+            if cur_incoming_edge_type != TLEdgeType.PLACEHOLDER:
+                if self.debug:
+                    print(f"adding receiver hook {cur_node}")
+                self.add_receiver_hook(cur_node)
+                
+            if cur_incoming_edge_type == TLEdgeType.DIRECT_COMPUTATION:
+                self.add_sender_hook(cur_node, override=True)
+            
+            if cur_node.name in ["blocks.0.hook_resid_pre", "hook_pos_embed", "hook_embed"] \
+                or cur_incoming_edge_type == TLEdgeType.PLACEHOLDER:
+                pass
+            else: 
+                self.try_remove_edges(cur_node)
+                
+            if all(cur_node.visited[self.mode]):
+                self.frontier.remove(cur_node)
         
-        if cur_node.name in ["blocks.0.hook_resid_pre", "hook_pos_embed", "hook_embed"] \
-            or cur_incoming_edge_type == TLEdgeType.PLACEHOLDER:
-            pass
-        else: 
-            self.try_remove_edges(cur_node)
-        
-        self.current_node_idx += 1
+        # self.current_node_idx += 1
         
             
         

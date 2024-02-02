@@ -89,7 +89,7 @@ def get_mask_repeat_candidates(num_examples=None, seq_len=None, device=None):
 #%% 
 num_examples = 10
 seq_len = 300
-threshold = 0.8
+threshold = 0.71
 data_seed=42
 
 model = get_model(device=device)
@@ -128,7 +128,7 @@ exp = TLExperiment(
 exp.graph.count_edges()
 
 #%% 
-for _ in tqdm(range(1)):
+for _ in tqdm(range(50)):
     exp.step()
 exp.graph.count_edges()
 
