@@ -52,18 +52,18 @@ class TLEdgeType(Enum):
         return self.name == other.name and self.value == other.value
     
     
-# class TLEdge:
-#     type: TLEdgeType
-#     use_clean_grad: bool
-#     visited: bool
-#     present: bool 
+class TLEdge:
+    type: TLEdgeType
+    noise_visited: bool
+    denoise_visited: bool
+    present: bool 
     
-#     def __init__(self, type: TLEdgeType):
-#         self.type = type
-#         self.use_clean_grad = None
-#         self.present = True
-#         self.clean_grad = None 
-#         self.corrupt_grad = None
+    def __init__(self, type: TLEdgeType):
+        self.type = type
+        self.noise_visited = False
+        self.denoise_visited = False
+        self.present = True
+
          
     
 
