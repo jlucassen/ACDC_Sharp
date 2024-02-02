@@ -1,7 +1,8 @@
 import graphviz 
 import toy_circuits as tc
+from copy import deepcopy
 
-def visualize_graph_edges(graph:list, edge_batches:list=[{}], filename:str='temp.gv'):
+def visualize_graph_edges(graph:list, edge_batches:list=[{}], filename:str='temp'):
     color_code = {'INPUT':'black', 'AND':'red', 'OR':'blue'}
     for i, edges in enumerate(edge_batches):
         viz = graphviz.Digraph(engine='dot')
@@ -18,7 +19,7 @@ def visualize_graph_edges(graph:list, edge_batches:list=[{}], filename:str='temp
                     viz.edge(str(child.id), str(node.id), **edges[edge_key]) # plot selected edges with corresponding kwargs
                 else:
                     viz.edge(str(child.id), str(node.id))
-        viz.render(f'toy_circuits/circuit_viz/{filename}_{i}')
+        viz.render(f'toy_circuits/circuit_viz/{filename}_{i}.gv')
 
 def get_edge_grad(node, child, noise):
     old_forward = node.forward()
@@ -63,24 +64,27 @@ def frankenstein_path_algorithm(graph:list, n_iters:int=5, greedy=False):
     included_nodes = [graph[-1]]
     edge_batches = []
     for _ in range(n_iters):
+        print(f"{[n.id for n in included_nodes]=}")
         nodes_to_include = []
         for node in included_nodes:
+            print(f"{node.id=}, {[n.id for n in node.children]=}")
             for child in node.children:
-                edge_key = (str(child.id), str(node.id))
-                if edge_key in noising_edges.keys():
-                    combined_edges[edge_key] = noising_edges[edge_key]
-                    nodes_to_include.append(child) # we have now found a path from child up to exit that has high grads all the way
-                    if greedy:
-                        nodes_to_include += recursive_add(child, noising_edges, combined_edges) # adds to combined edges internally
-                    if edge_key in denoising_edges.keys():
-                        raise NotImplementedError # don't know how to handle doubles yet
-                elif edge_key in denoising_edges:
-                    combined_edges[edge_key] = denoising_edges[edge_key]
-                    nodes_to_include.append(child) # we have now found a path from child up to exit that has high grads all the way
-                    if greedy:
-                        nodes_to_include += recursive_add(child, denoising_edges, combined_edges) # adds to combined edges internally
+                if child not in included_nodes:
+                    edge_key = (str(child.id), str(node.id))
+                    if edge_key in noising_edges.keys():
+                        combined_edges[edge_key] = noising_edges[edge_key]
+                        nodes_to_include.append(child) # we have now found a path from child up to exit that has high grads all the way
+                        if greedy:
+                            nodes_to_include += recursive_add(child, noising_edges, combined_edges) # adds to combined edges internally
+                        if edge_key in denoising_edges.keys():
+                            raise NotImplementedError # don't know how to handle doubles yet
+                    elif edge_key in denoising_edges:
+                        combined_edges[edge_key] = denoising_edges[edge_key]
+                        nodes_to_include.append(child) # we have now found a path from child up to exit that has high grads all the way
+                        if greedy:
+                            nodes_to_include += recursive_add(child, denoising_edges, combined_edges) # adds to combined edges internally
+        print(f"{[n.id for n in nodes_to_include]=}")
         included_nodes += nodes_to_include
-        nodes_to_include = []
         edge_batches.append(combined_edges.copy())
     return edge_batches
                 
@@ -88,8 +92,6 @@ def frankenstein_path_algorithm(graph:list, n_iters:int=5, greedy=False):
 tree_size_param = 5
 dag_size_param = 8
 fan_in = 2
-
-# demo edge based component algorithm
 
 tree_on = tc.make_graph(2**tree_size_param-1, 2**tree_size_param, fan_in, input_value=True, tree=True)
 tree_off = tc.make_graph(2**tree_size_param-1, 2**tree_size_param, fan_in, input_value=False, tree=True)
@@ -99,10 +101,13 @@ tree_on_denoise_edges = get_all_edge_grads(tree_on, noise=False, color='blue')
 tree_off_noise_edges = get_all_edge_grads(tree_off, noise=True)
 tree_off_denoise_edges = get_all_edge_grads(tree_off, noise=False, color='blue')
 
-visualize_graph_edges(tree_on, [tree_on_noise_edges], 'tree_on_noise_edges.gv')
-visualize_graph_edges(tree_on, [tree_on_denoise_edges], 'tree_on_denoise_edges.gv')
-visualize_graph_edges(tree_off, [tree_off_noise_edges], 'tree_off_noise_edges.gv')
-visualize_graph_edges(tree_off, [tree_off_denoise_edges], 'tree_off_denoise_edges.gv')
+#visualize_graph_edges(tree_on, [tree_on_noise_edges], 'tree_on_noise_edges')
+#visualize_graph_edges(tree_on, [tree_on_denoise_edges], 'tree_on_denoise_edges')
+#visualize_graph_edges(tree_off, [tree_off_noise_edges], 'tree_off_noise_edges')
+#visualize_graph_edges(tree_off, [tree_off_denoise_edges], 'tree_off_denoise_edges')
 
-tree_on_frankenstein_edges = frankenstein_path_algorithm(tree_on, n_iters=5, greedy=True)
-visualize_graph_edges(tree_on, tree_on_frankenstein_edges)
+tree_on_franken_nongreed_edges = frankenstein_path_algorithm(deepcopy(tree_on), n_iters=5)
+tree_on_franken_greed_edges = frankenstein_path_algorithm(deepcopy(tree_on), n_iters=5, greedy=True)
+print(tree_on_franken_greed_edges)
+#visualize_graph_edges(tree_on, tree_on_franken_nongreed_edges, filename='tree_frankenstein_nongreedy_edges')
+visualize_graph_edges(tree_on, tree_on_franken_greed_edges, filename='tree_frankenstein_greedy_edges')
