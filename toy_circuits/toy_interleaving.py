@@ -19,7 +19,10 @@ def visualize_graph_edges(graph:list, edge_batches:list=[{}], filename:str='temp
                     viz.edge(str(child.id), str(node.id), **edges[edge_key]) # plot selected edges with corresponding kwargs
                 else:
                     viz.edge(str(child.id), str(node.id))
-        viz.render(f'toy_circuits/circuit_viz/{filename}_{i}.gv')
+        if len(edge_batches)>1:
+            viz.render(f'toy_circuits/circuit_viz/{filename}_{i}.gv')
+        else:
+            viz.render(f'toy_circuits/circuit_viz/{filename}.gv')
 
 def get_edge_grad(node, child, noise):
     old_forward = node.forward()
@@ -64,10 +67,8 @@ def frankenstein_path_algorithm(graph:list, n_iters:int=5, greedy=False):
     included_nodes = [graph[-1]]
     edge_batches = []
     for _ in range(n_iters):
-        print(f"{[n.id for n in included_nodes]=}")
         nodes_to_include = []
         for node in included_nodes:
-            print(f"{node.id=}, {[n.id for n in node.children]=}")
             for child in node.children:
                 if child not in included_nodes:
                     edge_key = (str(child.id), str(node.id))
@@ -83,7 +84,6 @@ def frankenstein_path_algorithm(graph:list, n_iters:int=5, greedy=False):
                         nodes_to_include.append(child) # we have now found a path from child up to exit that has high grads all the way
                         if greedy:
                             nodes_to_include += recursive_add(child, denoising_edges, combined_edges) # adds to combined edges internally
-        print(f"{[n.id for n in nodes_to_include]=}")
         included_nodes += nodes_to_include
         edge_batches.append(combined_edges.copy())
     return edge_batches
@@ -101,13 +101,13 @@ tree_on_denoise_edges = get_all_edge_grads(tree_on, noise=False, color='blue')
 tree_off_noise_edges = get_all_edge_grads(tree_off, noise=True)
 tree_off_denoise_edges = get_all_edge_grads(tree_off, noise=False, color='blue')
 
-#visualize_graph_edges(tree_on, [tree_on_noise_edges], 'tree_on_noise_edges')
-#visualize_graph_edges(tree_on, [tree_on_denoise_edges], 'tree_on_denoise_edges')
-#visualize_graph_edges(tree_off, [tree_off_noise_edges], 'tree_off_noise_edges')
-#visualize_graph_edges(tree_off, [tree_off_denoise_edges], 'tree_off_denoise_edges')
+visualize_graph_edges(tree_off, [tree_off_noise_edges], 'edge_grads/tree_off_noise_edges')
+visualize_graph_edges(tree_on, [tree_on_noise_edges], 'edge_grads/tree_on_noise_edges')
+visualize_graph_edges(tree_on, [tree_on_denoise_edges], 'edge_grads/tree_on_denoise_edges')
+visualize_graph_edges(tree_off, [tree_off_denoise_edges], 'edge_grads/tree_off_denoise_edges')
 
 tree_on_franken_nongreed_edges = frankenstein_path_algorithm(deepcopy(tree_on), n_iters=5)
 tree_on_franken_greed_edges = frankenstein_path_algorithm(deepcopy(tree_on), n_iters=5, greedy=True)
-print(tree_on_franken_greed_edges)
-#visualize_graph_edges(tree_on, tree_on_franken_nongreed_edges, filename='tree_frankenstein_nongreedy_edges')
-visualize_graph_edges(tree_on, tree_on_franken_greed_edges, filename='tree_frankenstein_greedy_edges')
+
+visualize_graph_edges(tree_on, tree_on_franken_nongreed_edges, filename='frankenstein_alg/tree_frankenstein_nongreedy_edges')
+visualize_graph_edges(tree_on, tree_on_franken_greed_edges, filename='frankenstein_alg/tree_frankenstein_greedy_edges')

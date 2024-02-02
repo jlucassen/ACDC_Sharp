@@ -90,7 +90,7 @@ def alternating_components(graph:list, n_iters:int):
         components.append(get_reachable_component(graph, components[-1], noise = bool(i%2)))
     return components
 
-def visualize_graph_components(graph:list, components:list=[[]], filename:str='temp.gv'):
+def visualize_graph_components(graph:list, components:list=[[]], filename:str='temp'):
     color_code = {'INPUT':'black', 'AND':'red', 'OR':'blue'}
     for i, component in enumerate(components):
         viz = graphviz.Digraph(engine='dot')
@@ -106,4 +106,7 @@ def visualize_graph_components(graph:list, components:list=[[]], filename:str='t
             viz.node(str(node.id), **plot_kwargs)
             for child in node.children:
                 viz.edge(str(child.id), str(node.id))
-        viz.render(f'toy_circuits/circuit_viz/{filename}_{i}')
+        if len(components)>1:
+            viz.render(f'toy_circuits/circuit_viz/{filename}_{i}.gv')
+        else:
+            viz.render(f'toy_circuits/circuit_viz/{filename}.gv')
