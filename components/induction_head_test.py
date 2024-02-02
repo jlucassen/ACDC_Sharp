@@ -128,7 +128,9 @@ exp = TLExperiment(
 exp.graph.count_edges()
 
 #%% 
-for _ in tqdm(range(5)):
+exp.frontier
+#%% 
+for _ in tqdm(range(1)):
     exp.step()
 exp.graph.count_edges()
 

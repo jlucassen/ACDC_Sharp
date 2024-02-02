@@ -12,7 +12,7 @@ class TLNodeIndex:
     def __init__(self, name: str, index: Optional[int] = None):
         self.name = name
         self.index = index
-        self.visited = (False, False)
+        self.visited = [False, False]
         
     def __eq__(self, other):
         assert isinstance(other, TLNodeIndex)
