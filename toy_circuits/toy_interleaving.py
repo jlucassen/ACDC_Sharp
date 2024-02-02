@@ -13,23 +13,79 @@ def visualize_graph_edges(graph:list, edges:dict={}, filename:str='temp.gv'):
         viz.node(str(node.id), **node_kwargs)
         for child in node.children:
             edge_key = (str(child.id), str(node.id))
-            if edge_key in edges:
+            if edge_key in edges.keys():
                 viz.edge(str(child.id), str(node.id), **edges[edge_key]) # plot selected edges with corresponding kwargs
             else:
                 viz.edge(str(child.id), str(node.id))
     viz.render(f'toy_circuits/circuit_viz/{filename}')
 
-def get_node_to_node_derivatives(graph:list):
+def get_edge_grad(node, child, noise):
+    old_forward = node.forward()
+    saved_gate = child.gate
+    saved_value = child.value
+    child.gate = 'INPUT'
+    child.value = not noise
+    new_forward = node.forward()
+    child.gate = saved_gate
+    child.value = saved_value
+    return new_forward != old_forward
+
+def get_all_edge_grads(graph:list, noise=True, color='red'):
     edges = {}
     for node in graph:
         for child in node.children:
-            edges[(node.id, child.id)] = {'color':'red'}
+            if get_edge_grad(node, child, noise):
+                edges[(str(child.id), str(node.id))] = {'color':color} # flipping child can change node, mark edge
     return edges
+
+def set_all_inputs(graph:list, value:bool=False):
+    for node in graph:
+        if node.gate == 'INPUT':
+            node.value = value
+
+def frankenstein_path_algorithm(graph:list, n_iters:int=5):
+    noising_edges = get_all_edge_grads(graph, noise=True, color='red')
+    set_all_inputs(graph, False)
+    denoising_edges = get_all_edge_grads(graph, noise=False, color='blue')
+
+    combined_edges = {}
+    included_nodes = [graph[-1]]
+    for _ in range(n_iters):
+        nodes_to_include = []
+        for node in included_nodes:
+            for child in node.children:
+                edge_key = (str(child.id), str(node.id))
+                if edge_key in noising_edges.keys():
+                    combined_edges[edge_key] = noising_edges[edge_key]
+                    nodes_to_include.append(child) # we have now found a path from child up to exit that has high grads all the way
+                    if edge_key in denoising_edges.keys():
+                        raise NotImplementedError # don't know how to handle doubles yet
+                elif edge_key in denoising_edges:
+                    combined_edges[edge_key] = denoising_edges[edge_key]
+                    nodes_to_include.append(child) # we have now found a path from child up to exit that has high grads all the way
+        included_nodes += nodes_to_include
+        nodes_to_include = []
+    return combined_edges
+                
 
 tree_size_param = 5
 dag_size_param = 8
 fan_in = 2
 
-tree = tc.make_graph(2**tree_size_param-1, 2**tree_size_param, fan_in, input_value=True, tree=True)
-edges = get_node_to_node_derivatives(tree)
-visualize_graph_edges(tree, edges)
+# demo edge based component algorithm
+
+tree_on = tc.make_graph(2**tree_size_param-1, 2**tree_size_param, fan_in, input_value=True, tree=True)
+tree_off = tc.make_graph(2**tree_size_param-1, 2**tree_size_param, fan_in, input_value=False, tree=True)
+
+tree_on_noise_edges = get_all_edge_grads(tree_on, noise=True)
+tree_on_denoise_edges = get_all_edge_grads(tree_on, noise=False, color='blue')
+tree_off_noise_edges = get_all_edge_grads(tree_off, noise=True)
+tree_off_denoise_edges = get_all_edge_grads(tree_off, noise=False, color='blue')
+
+visualize_graph_edges(tree_on, tree_on_noise_edges, 'tree_on_noise_edges.gv')
+visualize_graph_edges(tree_on, tree_on_denoise_edges, 'tree_on_denoise_edges.gv')
+visualize_graph_edges(tree_off, tree_off_noise_edges, 'tree_off_noise_edges.gv')
+visualize_graph_edges(tree_off, tree_off_denoise_edges, 'tree_off_denoise_edges.gv')
+
+tree_on_frankenstein_edges = frankenstein_path_algorithm(tree_on, n_iters=5)
+visualize_graph_edges(tree_on, tree_on_frankenstein_edges)
